@@ -1,0 +1,43 @@
+kind: assumption_record
+schema_version: "0.3"
+id: AR-sequential-phases-20260408-120013
+title: "Validation phases V1-V8 execute sequentially, not in parallel"
+status: accepted
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T12:00:13Z"
+updated_at: "2026-04-08T12:00:13Z"
+trace:
+  upstream:
+    - target_id: BS-validator-pipeline-20260408-120000
+      edge: derived_from
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T13:00:00Z"
+metadata:
+  impact_level: medium
+  area: architecture
+spec:
+  statement: >
+    The 8 validation phases (V1 through V8) execute sequentially in order.
+    Each phase receives the shared ArtifactIndex and appends to a shared
+    findings list. There is no parallelism between phases because later
+    phases depend on earlier phases' results (e.g., V4 depends on V1's
+    index, V8 depends on V1-V7 findings).
+  rationale: >
+    The validator-spec section 2.2 defines the architecture as a "hybrid
+    phased pipeline" where "phases V1 through V8 execute sequentially."
+    The data dependencies between phases make parallelism impractical:
+    V2 needs V1's index, V3-V8 need schema_invalid annotations from V2,
+    V8 needs all prior findings.
+  source_type: documented
+  source_refs:
+    - "validator-spec.md#2.2"
+  decision_authority: technical_authority
+  review_by: "2026-05-08T12:00:00Z"
+  resolution_rule: >
+    Accept as documented. If performance becomes a concern, individual phases
+    could be internally parallelized (e.g., V4 sub-rules RI-1 through RI-10
+    could run concurrently) without changing the inter-phase ordering.

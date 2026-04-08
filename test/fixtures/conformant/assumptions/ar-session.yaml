@@ -1,0 +1,30 @@
+kind: assumption_record
+schema_version: "0.3"
+id: AR-session-001
+title: Sessions use JWT tokens
+status: accepted
+owners:
+  - alice
+created_at: "2026-01-01T00:00:00Z"
+updated_at: "2026-01-01T00:00:00Z"
+trace:
+  upstream:
+    - target_id: BS-login-001
+      edge: derived_from
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: bob
+    approved_at: "2026-01-02T00:00:00Z"
+metadata:
+  impact_level: medium
+  area: architecture
+spec:
+  statement: Sessions are managed via stateless JWT tokens
+  rationale: Simplifies horizontal scaling
+  source_type: decision
+  source_refs:
+    - "ADR-001"
+  decision_authority: technical_authority
+  review_by: "2026-06-01T00:00:00Z"
+  resolution_rule: Must be accepted before implementation

@@ -1,0 +1,107 @@
+kind: behavior_spec
+schema_version: "0.3"
+id: BS-verify-skill-20260408-140000
+title: "/verify skill — run tests and create verification artifacts"
+status: approved
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T14:00:00Z"
+updated_at: "2026-04-08T14:00:00Z"
+trace:
+  upstream:
+    - target_id: BS-validator-pipeline-20260408-120000
+      edge: derived_from
+  downstream: []
+approvals:
+  - authority_role: product_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T14:30:00Z"
+metadata:
+  tags:
+    - skill
+    - verify
+    - lifecycle
+    - phase-6
+spec:
+  actor: "BDSK /verify skill (Claude Code session)"
+  goal: >
+    Run tests associated with behavior specs in the active execution plan,
+    record results as verification_artifact YAML files, and report a
+    coverage summary. This closes BDSK lifecycle phase 6 (Verification)
+    and satisfies Algorithm E condition 1.
+  preconditions:
+    - "An execution plan exists with spec.required_inputs.behaviors listing behavior spec IDs"
+    - "The referenced behavior specs exist and are status: approved"
+    - "Implementation is complete — code changes have been made"
+    - "A test runner is available (bun test, npm test, or equivalent)"
+  trigger:
+    type: command
+    action: "User invokes /verify"
+  examples:
+    - id: EX-verify-skill-01
+      given:
+        - >
+          Execution plan EP-validator-impl-20260408-130000 references
+          required_inputs.behaviors: [BS-v1-discovery-20260408-120001, BS-v2-schema-20260408-120002]
+        - "Test file test/integration/full-pipeline.test.ts exists with 7 passing tests"
+        - "bun test exits with code 0"
+      when:
+        - "User runs /verify"
+      then:
+        - "Skill runs 'bun test' and captures output showing 7 pass, 0 fail"
+        - >
+          Creates artifacts/verifications/VA-v1-discovery-20260408-140000.yaml with:
+          kind: verification_artifact, status: draft,
+          metadata.verification_type: integration_test,
+          spec.location: test/integration/full-pipeline.test.ts,
+          spec.proves: [BS-v1-discovery-20260408-120001],
+          spec.execution_result: pass,
+          spec.evidence_refs: [test-output-20260408-140000.txt],
+          trace.upstream: [{target_id: BS-v1-discovery-20260408-120001, edge: proves}]
+        - >
+          Creates artifacts/verifications/VA-v2-schema-20260408-140001.yaml with
+          spec.proves: [BS-v2-schema-20260408-120002], spec.execution_result: pass
+        - "Prints: 'Verification complete: 2 behavior specs verified, 2 pass, 0 fail'"
+    - id: EX-verify-skill-02
+      given:
+        - >
+          Execution plan EP-feature-001 references
+          required_inputs.behaviors: [BS-login-001, BS-signup-002]
+        - "Test file test/auth/login.test.ts exists and passes"
+        - "No test file found for BS-signup-002"
+      when:
+        - "User runs /verify"
+      then:
+        - "Creates VA-login-*.yaml with spec.execution_result: pass"
+        - >
+          Asks user: 'No tests found for BS-signup-002. What is the test location?'
+          with options: Enter path manually, Skip (mark as not_run), Create test stub
+        - >
+          If user skips: creates VA-signup-*.yaml with
+          spec.execution_result: not_run
+        - "Prints: 'Verification complete: 2 specs checked, 1 pass, 0 fail, 1 not_run'"
+    - id: EX-verify-skill-03
+      given:
+        - >
+          Execution plan EP-release-001 references
+          required_inputs.behaviors: [BS-checkout-001]
+        - "Test file test/checkout.test.ts exists but 2 of 5 tests fail"
+      when:
+        - "User runs /verify"
+      then:
+        - "Creates VA-checkout-*.yaml with spec.execution_result: fail"
+        - "Warns: 'BDSK-VER-003: Verification for BS-checkout-001 failed. /accept will compute rejected.'"
+  observable_outcomes:
+    - "A verification_artifact YAML is created for each behavior spec in the plan"
+    - "Each artifact has spec.execution_result set to pass, fail, not_run, or waived"
+    - "Each artifact traces upstream to its behavior spec via edge: proves"
+    - "Test output is captured to a file referenced in spec.evidence_refs"
+    - "A coverage summary is printed showing pass/fail/not_run counts"
+  linked_assumptions: []
+  linked_contracts: []
+  non_goals:
+    - "Does NOT generate test code — it runs existing tests"
+    - "Does NOT approve verification artifacts — human changes status"
+    - "Does NOT evaluate review gates — that is /evaluate"
+    - "Does NOT run /accept — it is a prerequisite for /accept"
+    - "Does NOT modify source code or fix failing tests"

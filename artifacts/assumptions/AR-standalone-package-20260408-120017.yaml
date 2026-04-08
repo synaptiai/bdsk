@@ -1,0 +1,45 @@
+kind: assumption_record
+schema_version: "0.3"
+id: AR-standalone-package-20260408-120017
+title: "Validator is a standalone npm package with CLI and library entry points"
+status: accepted
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T12:00:17Z"
+updated_at: "2026-04-08T12:00:17Z"
+trace:
+  upstream:
+    - target_id: BS-validator-pipeline-20260408-120000
+      edge: derived_from
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T13:00:00Z"
+metadata:
+  impact_level: high
+  area: architecture
+spec:
+  statement: >
+    The validator will be packaged as a standalone npm package with two
+    entry points: a CLI (bdsk-validate command) and a library API
+    (validate() function). It will be usable independently of the BDSK
+    specification repository. The project structure follows the reference
+    layout in validator-spec.md section 12.
+  rationale: >
+    The validator-spec sections 7 and 8 define separate CLI and library
+    interfaces, implying independent distribution. Section 12 provides a
+    reference project structure (bdsk-validator/) that is a self-contained
+    package. The existing project scaffold in this repo already has
+    package.json and tsconfig.json for this purpose.
+  source_type: inferred
+  source_refs:
+    - "validator-spec.md#7"
+    - "validator-spec.md#8"
+    - "validator-spec.md#12"
+  decision_authority: technical_authority
+  review_by: "2026-05-08T12:00:00Z"
+  resolution_rule: >
+    Must be accepted before packaging and distribution decisions are made.
+    If rejected, the validator could be embedded as a module within a
+    larger BDSK toolchain package.

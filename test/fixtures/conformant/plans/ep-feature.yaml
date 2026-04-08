@@ -1,0 +1,51 @@
+kind: execution_plan
+schema_version: "0.3"
+id: EP-feature-001
+title: Implement login feature
+status: approved
+owners:
+  - alice
+created_at: "2026-01-01T00:00:00Z"
+updated_at: "2026-01-01T00:00:00Z"
+trace:
+  upstream:
+    - target_id: BS-login-001
+      edge: depends_on
+    - target_id: AR-session-001
+      edge: depends_on
+    - target_id: RG-security-001
+      edge: depends_on
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: bob
+    approved_at: "2026-01-02T00:00:00Z"
+metadata:
+  change_type: new_feature
+spec:
+  objective: Implement the login endpoint
+  in_scope_paths:
+    - "src/auth/**"
+  out_of_scope_paths:
+    - "src/billing/**"
+  allowed_operations:
+    - create_files
+    - modify_files
+  forbidden_operations:
+    - modify_spec
+  required_inputs:
+    behaviors:
+      - BS-login-001
+    assumptions:
+      - AR-session-001
+    contracts: []
+    policies: []
+    review_gates:
+      - RG-security-001
+  required_outputs:
+    - generated_diff
+    - verification_artifact
+  escalation_conditions:
+    - Missing dependency
+  completion_criteria:
+    - All tests pass

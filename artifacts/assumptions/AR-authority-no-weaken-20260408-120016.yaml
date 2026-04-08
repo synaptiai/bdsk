@@ -1,0 +1,43 @@
+kind: assumption_record
+schema_version: "0.3"
+id: AR-authority-no-weaken-20260408-120016
+title: "Custom authority configs cannot weaken the spec defaults"
+status: accepted
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T12:00:16Z"
+updated_at: "2026-04-08T12:00:16Z"
+trace:
+  upstream:
+    - target_id: BS-v5-authority-20260408-120005
+      edge: derived_from
+  downstream: []
+approvals:
+  - authority_role: security_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T13:00:00Z"
+metadata:
+  impact_level: critical
+  area: security
+spec:
+  statement: >
+    Repositories MAY provide a custom authority matrix via .bdsk/config.yaml
+    that requires MORE roles for a given action than the spec defaults (stricter).
+    They MUST NOT weaken the defaults (e.g., allowing an observer to approve
+    a behavior_spec when the default requires product_authority or
+    technical_authority). The validator MUST reject any configuration that
+    attempts to weaken authority requirements.
+  rationale: >
+    The validator-spec sections 5.5 and 10.2 both state this constraint.
+    Weakening authority requirements would undermine the governance guarantees
+    that BDSK provides. The validator must enforce this as a security boundary.
+  source_type: documented
+  source_refs:
+    - "validator-spec.md#5.5"
+    - "validator-spec.md#10.2"
+  decision_authority: security_authority
+  review_by: "2026-05-08T12:00:00Z"
+  resolution_rule: >
+    Must be accepted before V5 or config loading is implemented. If rejected,
+    the governance model must be redesigned to allow configurable authority
+    weakening with compensating controls.

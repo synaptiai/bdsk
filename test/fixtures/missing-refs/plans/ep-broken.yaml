@@ -1,0 +1,36 @@
+kind: execution_plan
+schema_version: "0.3"
+id: EP-broken-001
+title: Plan with missing references
+status: approved
+owners:
+  - alice
+created_at: "2026-01-01T00:00:00Z"
+updated_at: "2026-01-01T00:00:00Z"
+trace:
+  upstream:
+    - target_id: BS-nonexistent-999
+      edge: depends_on
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: bob
+    approved_at: "2026-01-01T00:00:00Z"
+metadata:
+  change_type: new_feature
+spec:
+  objective: This plan references artifacts that don't exist
+  in_scope_paths: ["src/**"]
+  out_of_scope_paths: []
+  allowed_operations: [create_files]
+  forbidden_operations: []
+  required_inputs:
+    behaviors:
+      - BS-nonexistent-999
+    assumptions: []
+    contracts: []
+    policies: []
+    review_gates: []
+  required_outputs: [generated_diff]
+  escalation_conditions: []
+  completion_criteria: []

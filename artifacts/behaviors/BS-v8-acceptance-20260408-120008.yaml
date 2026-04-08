@@ -1,0 +1,106 @@
+kind: behavior_spec
+schema_version: "0.3"
+id: BS-v8-acceptance-20260408-120008
+title: "V8: Acceptance Validation — Algorithm E (compute and compare acceptance outcome)"
+status: approved
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T12:00:08Z"
+updated_at: "2026-04-08T12:00:08Z"
+trace:
+  upstream:
+    - target_id: BS-validator-pipeline-20260408-120000
+      edge: derived_from
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T13:00:00Z"
+metadata:
+  tags:
+    - validator
+    - v8
+    - acceptance
+    - algorithm-e
+spec:
+  actor: "Validator pipeline (phase V8)"
+  goal: >
+    Implement Algorithm E: for each acceptance_decision, independently compute
+    the expected outcome (accepted, conditionally_accepted, or rejected) based
+    on all findings from V1-V7, then compare against the recorded
+    metadata.outcome. Flag disagreements and incomplete evidence.
+  preconditions:
+    - "V1-V7 have completed and produced a cumulative findings list"
+    - "ArtifactIndex contains acceptance_decision artifacts to validate"
+  trigger:
+    type: event
+    action: "Pipeline invokes validateAcceptance(index, priorFindings)"
+  examples:
+    - id: EX-v8-acceptance-01
+      given:
+        - >
+          AD-feature-001 (acceptance_decision,
+            metadata.outcome: accepted,
+            spec.subject_diffs: [GD-feature-001],
+            spec.approvers: [{id: dana, role: release_authority}],
+            upstream depends_on: [GD-feature-001, VA-login-001, EE-security-001])
+        - "Prior findings from V1-V7 contain zero errors related to EP-feature-001"
+        - "All 6 acceptance conditions are satisfied: verification passes, evals exist, no unwaived blocking gate failures, no unresolved manual/escalation gates, no stop-condition breaches, authority satisfied"
+      when:
+        - "validateAcceptance(index, priorFindings) is called"
+      then:
+        - "Computed outcome for AD-feature-001 is 'accepted'"
+        - "metadata.outcome 'accepted' matches computed outcome"
+        - "No findings recorded"
+    - id: EX-v8-acceptance-02
+      given:
+        - >
+          AD-release-001 (acceptance_decision,
+            metadata.outcome: accepted,
+            spec.subject_diffs: [GD-release-001],
+            spec.conditions: [],
+            spec.approvers: [{id: dana, role: release_authority}],
+            upstream depends_on: [GD-release-001, VA-checkout-001])
+        - >
+          Prior findings include:
+          BDSK-GATE-001 (error, blocking gate RG-security-001 failed without waiver),
+          BDSK-VER-001 (error, BS-checkout-001 lacks verification)
+        - "These are blocking failures — computed outcome should be 'rejected'"
+      when:
+        - "validateAcceptance(index, priorFindings) is called"
+      then:
+        - "Computed outcome for AD-release-001 is 'rejected'"
+        - "BDSK-ACC-002 (error): recorded outcome 'accepted' disagrees with computed 'rejected'"
+        - "BDSK-ACC-004 (error): accepted decision contains unresolved blocking failures (BDSK-GATE-001, BDSK-VER-001)"
+    - id: EX-v8-acceptance-03
+      given:
+        - >
+          AD-hotfix-001 (acceptance_decision,
+            metadata.outcome: conditionally_accepted,
+            spec.subject_diffs: [GD-hotfix-001],
+            spec.conditions: ["Performance regression monitoring required for 7 days post-deploy"],
+            spec.approvers: [{id: dana, role: release_authority}],
+            upstream depends_on: [GD-hotfix-001, VA-hotfix-001, EE-perf-001])
+        - "All blocking conditions are satisfied or waived"
+        - "Prior findings include one BDSK-GATE-004 warning (non-blocking: missing eval for a warning-class gate)"
+        - "No blocking errors remain"
+      when:
+        - "validateAcceptance(index, priorFindings) is called"
+      then:
+        - "Computed outcome is 'conditionally_accepted' (blocking satisfied, non-blocking warnings remain)"
+        - "metadata.outcome 'conditionally_accepted' matches computed outcome"
+        - "spec.conditions is non-empty — no BDSK-ACC-003"
+        - "No findings recorded"
+  observable_outcomes:
+    - "BDSK-ACC-001 when acceptance is recorded without complete evidence (missing diffs, verifications, or evals)"
+    - "BDSK-ACC-002 when recorded outcome disagrees with computed outcome from Algorithm E"
+    - "BDSK-ACC-003 (warning) when conditionally_accepted but conditions list is empty"
+    - "BDSK-ACC-004 when an accepted decision contains unresolved blocking failures"
+    - "The computed outcome is always reported, even when it disagrees with the recorded one"
+  linked_assumptions: []
+  linked_contracts: []
+  non_goals:
+    - "V8 does NOT determine whether the conditions in a conditional acceptance are themselves met"
+    - "V8 does NOT approve or reject — it only verifies consistency between computed and recorded outcomes"
+    - "V8 does NOT define the 6 acceptance conditions — it aggregates results from V5, V6, and V7"
+    - "V8 does NOT produce the final conformance report (the pipeline orchestrator does)"

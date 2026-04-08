@@ -1,0 +1,85 @@
+kind: behavior_spec
+schema_version: "0.3"
+id: BS-v3-trace-20260408-120003
+title: "V3: Trace Validation — verify trace structure and edge-kind compatibility"
+status: approved
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T12:00:03Z"
+updated_at: "2026-04-08T12:00:03Z"
+trace:
+  upstream:
+    - target_id: BS-validator-pipeline-20260408-120000
+      edge: derived_from
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T13:00:00Z"
+metadata:
+  tags:
+    - validator
+    - v3
+    - trace
+spec:
+  actor: "Validator pipeline (phase V3)"
+  goal: >
+    Verify that every artifact's trace field is well-formed (has upstream and
+    downstream arrays), that every trace reference has exactly target_id and edge
+    fields, that every edge value is one of the 10 canonical types, and that
+    every (source_kind, edge, target_kind) triple matches the compatibility matrix.
+  preconditions:
+    - "V1 and V2 have completed"
+    - "Only schema-valid artifacts are checked"
+    - "The edge-kind compatibility matrix is loaded as a static lookup table"
+  trigger:
+    type: event
+    action: "Pipeline invokes validateTraces(index)"
+  examples:
+    - id: EX-v3-trace-01
+      given:
+        - >
+          ArtifactIndex contains GD-feature-001 (generated_diff) with trace:
+          upstream: [{target_id: EP-feature-001, edge: produced_by},
+                     {target_id: BS-login-001, edge: implements}],
+          downstream: [{target_id: VA-login-001, edge: proves}]
+        - "EP-feature-001 is an execution_plan, BS-login-001 is a behavior_spec, VA-login-001 is a verification_artifact"
+        - "All three triples are valid per the compatibility matrix: (generated_diff, produced_by, execution_plan), (generated_diff, implements, behavior_spec), (generated_diff, proves, verification_artifact)"
+      when:
+        - "validateTraces(index) is called"
+      then:
+        - "No findings are recorded for GD-feature-001"
+    - id: EX-v3-trace-02
+      given:
+        - >
+          ArtifactIndex contains BS-bad-001 (behavior_spec) with trace:
+          upstream: [{target_id: EP-feature-001, edge: produced_by, extra_field: "oops"}],
+          downstream: "not-an-array"
+        - >
+          ArtifactIndex also contains AR-bad-002 (assumption_record) with trace:
+          upstream: [{target_id: BS-login-001, edge: "invented_edge"}],
+          downstream: []
+        - >
+          ArtifactIndex also contains RG-bad-003 (review_gate) with trace:
+          upstream: [{target_id: AR-session-001, edge: depends_on}],
+          downstream: []
+        - "The triple (review_gate, depends_on, assumption_record) is NOT in the compatibility matrix"
+      when:
+        - "validateTraces(index) is called"
+      then:
+        - "Findings include BDSK-TRACE-003 for BS-bad-001 (extra_field in trace reference)"
+        - "Findings include BDSK-TRACE-001 for BS-bad-001 (downstream is not an array)"
+        - "Findings include BDSK-TRACE-002 for AR-bad-002 (edge 'invented_edge' is not in canonical 10)"
+        - "Findings include BDSK-TRACE-004 for RG-bad-003 (review_gate depends_on assumption_record is not a valid triple)"
+  observable_outcomes:
+    - "BDSK-TRACE-001 when trace object is malformed (missing upstream or downstream array)"
+    - "BDSK-TRACE-002 when edge value is not one of the 10 canonical types"
+    - "BDSK-TRACE-003 when a trace reference has fields beyond target_id and edge"
+    - "BDSK-TRACE-004 when (source_kind, edge, target_kind) triple is not in the compatibility matrix"
+  linked_assumptions: []
+  linked_contracts: []
+  non_goals:
+    - "V3 does NOT check whether target_id resolves to an existing artifact (that is V4 RI-1)"
+    - "V3 does NOT verify trace symmetry (if A references B upstream, B should reference A downstream)"
+    - "V3 does NOT modify traces to fix errors"
+    - "V3 does NOT validate trace references in schema-invalid artifacts"

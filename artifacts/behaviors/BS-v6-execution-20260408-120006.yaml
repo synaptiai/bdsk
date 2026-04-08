@@ -1,0 +1,103 @@
+kind: behavior_spec
+schema_version: "0.3"
+id: BS-v6-execution-20260408-120006
+title: "V6: Execution Conformance — Algorithms A, B, C (start, stop, gate)"
+status: approved
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T12:00:06Z"
+updated_at: "2026-04-08T12:00:06Z"
+trace:
+  upstream:
+    - target_id: BS-validator-pipeline-20260408-120000
+      edge: derived_from
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T13:00:00Z"
+metadata:
+  tags:
+    - validator
+    - v6
+    - execution
+    - algorithms
+spec:
+  actor: "Validator pipeline (phase V6)"
+  goal: >
+    Validate execution conformance by implementing three algorithms:
+    Algorithm A (execution start validation — all inputs exist, are approved,
+    assumptions resolved, policies and gates present),
+    Algorithm B (stop-condition evaluation — triggered conditions are handled),
+    Algorithm C (gate evaluation — blocking/manual-review/escalation gates
+    are resolved or waived).
+  preconditions:
+    - "V1-V5 have completed"
+    - "ArtifactIndex with execution plans, logs, evals, and waivers is available"
+  trigger:
+    type: event
+    action: "Pipeline invokes validateExecutionConformance(index)"
+  examples:
+    - id: EX-v6-execution-01
+      given:
+        - >
+          EP-feature-001 (execution_plan, status: approved,
+            spec.required_inputs.behaviors: [BS-login-001],
+            spec.required_inputs.policies: [CP-style-001],
+            spec.required_inputs.review_gates: [RG-security-001])
+        - "BS-login-001 (behavior_spec, status: approved)"
+        - "CP-style-001 (codegen_policy, status: approved)"
+        - "RG-security-001 (review_gate, status: approved, class: blocking)"
+        - >
+          EL-feature-001 (execution_log, depends_on: EP-feature-001,
+            spec.final_state: completed, spec.stop_conditions_triggered: [])
+        - "EE-security-001 (execution_eval, spec.subject_gate: RG-security-001, spec.result: pass)"
+        - "No assumption_record with impact_level 'high' or 'critical' is in status 'proposed'"
+      when:
+        - "validateExecutionConformance(index) is called"
+      then:
+        - "No findings — Algorithm A passes (all inputs exist and approved)"
+        - "No findings — Algorithm B passes (no stop conditions triggered)"
+        - "No findings — Algorithm C passes (blocking gate RG-security-001 evaluated as pass)"
+    - id: EX-v6-execution-02
+      given:
+        - >
+          EP-release-001 (execution_plan, status: approved,
+            spec.required_inputs.behaviors: [BS-checkout-001],
+            spec.required_inputs.policies: [],
+            spec.required_inputs.review_gates: [RG-security-001, RG-manual-001, RG-escalation-001])
+        - "BS-checkout-001 (behavior_spec, status: approved)"
+        - "RG-security-001 (review_gate, class: blocking)"
+        - "RG-manual-001 (review_gate, class: manual-review)"
+        - "RG-escalation-001 (review_gate, class: escalation)"
+        - "AR-critical-001 (assumption_record, metadata.impact_level: critical, status: proposed)"
+        - >
+          EL-release-001 (execution_log, depends_on: EP-release-001,
+            spec.final_state: completed,
+            spec.stop_conditions_triggered: [{condition: "token_limit_exceeded", handled: false}])
+        - "EE-security-001 (execution_eval, spec.subject_gate: RG-security-001, spec.result: fail)"
+        - "No waiver_record exists for RG-security-001"
+        - "No execution_eval exists for RG-manual-001 or RG-escalation-001"
+      when:
+        - "validateExecutionConformance(index) is called"
+      then:
+        - "BDSK-EXEC-002 (error): AR-critical-001 is 'critical' impact and status 'proposed' — unresolved at execution start (Algorithm A)"
+        - "BDSK-EXEC-003 (error): stop condition 'token_limit_exceeded' triggered without escalation/abort/waiver (Algorithm B)"
+        - "BDSK-GATE-001 (error): blocking gate RG-security-001 failed without approved waiver (Algorithm C)"
+        - "BDSK-GATE-002 (error): manual-review gate RG-manual-001 unresolved (Algorithm C)"
+        - "BDSK-GATE-003 (error): escalation gate RG-escalation-001 unresolved (Algorithm C)"
+  observable_outcomes:
+    - "BDSK-EXEC-001 when execution plan is missing a required input (policy or gate)"
+    - "BDSK-EXEC-002 when a critical/high assumption is unresolved at execution start"
+    - "BDSK-EXEC-003 when a stop condition is triggered without proper handling"
+    - "BDSK-GATE-001 when a blocking gate fails without an approved waiver"
+    - "BDSK-GATE-002 when a manual-review gate is unresolved"
+    - "BDSK-GATE-003 when an escalation gate is unresolved"
+    - "BDSK-GATE-004 (warning) when no eval exists for a gate at all"
+  linked_assumptions: []
+  linked_contracts: []
+  non_goals:
+    - "V6 does NOT execute the actual AI agent or run code"
+    - "V6 does NOT generate or modify execution logs"
+    - "V6 does NOT define what constitutes a valid stop-condition response — it checks that one was recorded"
+    - "V6 does NOT compute final acceptance (that is V8)"

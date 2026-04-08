@@ -1,0 +1,28 @@
+kind: execution_eval
+schema_version: "0.3"
+id: EE-security-001
+title: Security gate evaluation
+status: completed
+owners:
+  - bob
+created_at: "2026-01-04T00:00:00Z"
+updated_at: "2026-01-04T00:00:00Z"
+trace:
+  upstream:
+    - target_id: EP-feature-001
+      edge: depends_on
+    - target_id: RG-security-001
+      edge: depends_on
+    - target_id: GD-feature-001
+      edge: evaluates
+  downstream: []
+approvals: []
+metadata:
+  eval_type: gate_check
+spec:
+  subject_gate: RG-security-001
+  subject_diff: GD-feature-001
+  result: pass
+  findings: []
+  evidence:
+    - "security-scan-report-2026-01-04.pdf"

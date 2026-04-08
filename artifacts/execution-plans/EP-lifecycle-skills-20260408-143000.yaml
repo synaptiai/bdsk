@@ -1,0 +1,67 @@
+kind: execution_plan
+schema_version: "0.3"
+id: EP-lifecycle-skills-20260408-143000
+title: "Create /verify and /evaluate skills to close BDSK lifecycle loop"
+status: approved
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T14:30:00Z"
+updated_at: "2026-04-08T14:30:00Z"
+trace:
+  upstream:
+    - target_id: BS-verify-skill-20260408-140000
+      edge: depends_on
+    - target_id: BS-evaluate-skill-20260408-140100
+      edge: depends_on
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T14:30:00Z"
+metadata:
+  change_type: new_feature
+spec:
+  objective: >
+    Create the /verify and /evaluate Claude Code skills that close BDSK
+    lifecycle phases 5 (Evaluation) and 6 (Verification). Also upgrade
+    the /validate skill to call the full 8-phase TypeScript validator.
+    These skills enable /accept to compute Algorithm E outcomes by
+    producing verification_artifact and execution_eval YAML artifacts.
+  in_scope_paths:
+    - ".claude/skills/verify/**"
+    - ".claude/skills/evaluate/**"
+    - ".claude/skills/validate/**"
+  out_of_scope_paths:
+    - "src/**"
+    - "schemas/**"
+    - "bdsk_specification_v_0.md"
+    - "validator-spec.md"
+    - "artifacts/**"
+  allowed_operations:
+    - create_files
+    - modify_files
+  forbidden_operations:
+    - modify_spec
+    - modify_schemas
+    - modify_source_code
+    - delete_artifacts
+  required_inputs:
+    behaviors:
+      - BS-verify-skill-20260408-140000
+      - BS-evaluate-skill-20260408-140100
+    assumptions: []
+    contracts: []
+    policies: []
+    review_gates: []
+  required_outputs:
+    - generated_diff
+    - verification_artifact
+  escalation_conditions:
+    - "Skill YAML format unclear or undocumented"
+    - "Behavior spec ambiguity in test discovery mechanism"
+  completion_criteria:
+    - "/verify skill creates verification_artifact YAML for each behavior spec"
+    - "/evaluate skill creates execution_eval YAML for each review gate"
+    - "/validate skill calls the full 8-phase TypeScript validator"
+    - "All skill files follow the existing SKILL.md format"
+    - "All changes within approved scope paths"

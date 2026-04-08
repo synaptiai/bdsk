@@ -1,0 +1,107 @@
+kind: behavior_spec
+schema_version: "0.3"
+id: BS-evaluate-skill-20260408-140100
+title: "/evaluate skill — assess review gates and create execution evals"
+status: approved
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T14:01:00Z"
+updated_at: "2026-04-08T14:01:00Z"
+trace:
+  upstream:
+    - target_id: BS-validator-pipeline-20260408-120000
+      edge: derived_from
+  downstream: []
+approvals:
+  - authority_role: product_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T14:30:00Z"
+metadata:
+  tags:
+    - skill
+    - evaluate
+    - lifecycle
+    - phase-5
+spec:
+  actor: "BDSK /evaluate skill (Claude Code session)"
+  goal: >
+    Evaluate each review gate in the active execution plan against the
+    generated diff, record results as execution_eval YAML files, and report
+    gate pass/fail status. This closes BDSK lifecycle phase 5 (Evaluation)
+    and satisfies Algorithm E condition 2.
+  preconditions:
+    - "An execution plan exists with spec.required_inputs.review_gates listing gate IDs"
+    - "The referenced review gates exist and are status: approved"
+    - "A generated_diff artifact exists or git diff can produce the changeset"
+    - "Implementation is complete"
+  trigger:
+    type: command
+    action: "User invokes /evaluate"
+  examples:
+    - id: EX-evaluate-skill-01
+      given:
+        - >
+          Execution plan EP-feature-001 references
+          required_inputs.review_gates: [RG-security-001]
+        - >
+          RG-security-001 has metadata.gate_class: blocking,
+          spec.evaluation_method: static_check,
+          spec.pass_condition: ['Zero critical or high vulnerabilities']
+        - "Generated diff GD-feature-001 changes src/auth/login.ts and src/auth/jwt.ts"
+        - "No security vulnerabilities detected"
+      when:
+        - "User runs /evaluate"
+      then:
+        - >
+          Creates artifacts/execution-evals/EE-security-20260408-140100.yaml with:
+          kind: execution_eval, status: completed,
+          metadata.eval_type: gate_check,
+          spec.subject_diff: GD-feature-001,
+          spec.subject_gate: RG-security-001,
+          spec.result: pass, spec.findings: [],
+          spec.evidence: ['gate-eval-RG-security-001.txt'],
+          trace.upstream: [
+            {target_id: EP-feature-001, edge: depends_on},
+            {target_id: RG-security-001, edge: depends_on},
+            {target_id: GD-feature-001, edge: evaluates}]
+        - "Prints: 'Gate evaluation complete: 1 gate, 1 pass, 0 fail'"
+    - id: EX-evaluate-skill-02
+      given:
+        - >
+          Execution plan EP-validator-impl-20260408-130000 has
+          required_inputs.review_gates: [] (empty)
+      when:
+        - "User runs /evaluate"
+      then:
+        - "Prints: 'No review gates defined. Gate evaluation not required — skipping.'"
+        - "No execution_eval artifacts created"
+        - "Exits cleanly (Algorithm E condition 2 is vacuously satisfied)"
+    - id: EX-evaluate-skill-03
+      given:
+        - >
+          Execution plan EP-release-001 references
+          required_inputs.review_gates: [RG-scope-001, RG-security-001]
+        - >
+          RG-scope-001 has gate_class: blocking, evaluation_method: diff_analysis,
+          pass_condition: ['All changed files within in_scope_paths']
+        - "Generated diff modifies src/billing/charge.ts which is in out_of_scope_paths"
+        - "RG-security-001 passes"
+      when:
+        - "User runs /evaluate"
+      then:
+        - "Creates EE-scope-*.yaml with spec.result: fail, findings: ['Out-of-scope: src/billing/charge.ts']"
+        - "Creates EE-security-*.yaml with spec.result: pass"
+        - "Warns: 'BDSK-GATE-001: Blocking gate RG-scope-001 failed. /accept will compute rejected.'"
+  observable_outcomes:
+    - "An execution_eval YAML is created for each review gate in the plan"
+    - "Each artifact has spec.result set to pass, warn, fail, or escalate"
+    - "Each artifact traces to the execution plan, review gate, and generated diff"
+    - "If no review gates exist, exits cleanly with a message"
+  linked_assumptions: []
+  linked_contracts: []
+  non_goals:
+    - "Does NOT create or modify review gates"
+    - "Does NOT run tests — that is /verify"
+    - "Does NOT grant waivers — waivers are separate artifacts"
+    - "Does NOT compute acceptance — prerequisite for /accept"
+    - "Does NOT fix out-of-scope changes or policy violations"

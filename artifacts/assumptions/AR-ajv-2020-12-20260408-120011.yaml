@@ -1,0 +1,40 @@
+kind: assumption_record
+schema_version: "0.3"
+id: AR-ajv-2020-12-20260408-120011
+title: "JSON Schema validation uses ajv with 2020-12 draft support"
+status: accepted
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T12:00:11Z"
+updated_at: "2026-04-08T12:00:11Z"
+trace:
+  upstream:
+    - target_id: BS-v2-schema-20260408-120002
+      edge: derived_from
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T13:00:00Z"
+metadata:
+  impact_level: medium
+  area: architecture
+spec:
+  statement: >
+    The TypeScript validator will use ajv (Another JSON Schema Validator)
+    configured for JSON Schema draft 2020-12 to validate BDSK artifacts
+    against their kind-specific schemas. All 12 BDSK schemas plus common.json
+    use the 2020-12 draft ($schema: "https://json-schema.org/draft/2020-12/schema").
+  rationale: >
+    The validator-spec section 2.1 explicitly names ajv with 2020-12 support.
+    The existing schemas in schemas/ use the 2020-12 $schema URI. ajv is the
+    most widely used JSON Schema validator in the Node.js ecosystem.
+  source_type: decision
+  source_refs:
+    - "validator-spec.md#2.1"
+    - "schemas/common.json"
+  decision_authority: technical_authority
+  review_by: "2026-05-08T12:00:00Z"
+  resolution_rule: >
+    Must be accepted before V2 implementation begins. If rejected, an alternative
+    JSON Schema validation library supporting 2020-12 must be identified.

@@ -100,4 +100,11 @@ activated_at: <ISO-8601 timestamp>
 - Every execution plan MUST trace to at least one approved behavior spec
 - in_scope_paths and out_of_scope_paths MUST be explicitly defined
 - The spec and schemas are ALWAYS in out_of_scope_paths unless the execution plan explicitly governs spec changes
+- NEVER put governance output paths in out_of_scope_paths. These are always writable:
+  - `artifacts/verifications/` (created by /verify)
+  - `artifacts/execution-evals/` (created by /evaluate)
+  - `artifacts/acceptance/` (created by /accept)
+  - `artifacts/execution-logs/` (created during execution)
+  The check-scope.sh hook whitelists these paths, but defense-in-depth means not blocking them in the plan either.
 - After approval, the check-scope.sh hook will enforce the boundaries
+- When invoked from /run, the composite skill handles user interaction for scope confirmation

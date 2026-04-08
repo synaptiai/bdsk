@@ -1,0 +1,122 @@
+kind: execution_plan
+schema_version: "0.3"
+id: EP-validator-impl-20260408-130000
+title: "Implement BDSK Reference Validator (V1-V8 pipeline, CLI, and library API)"
+status: approved
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T13:00:00Z"
+updated_at: "2026-04-08T13:00:00Z"
+trace:
+  upstream:
+    - target_id: BS-validator-pipeline-20260408-120000
+      edge: depends_on
+    - target_id: BS-v1-discovery-20260408-120001
+      edge: depends_on
+    - target_id: BS-v2-schema-20260408-120002
+      edge: depends_on
+    - target_id: BS-v3-trace-20260408-120003
+      edge: depends_on
+    - target_id: BS-v4-referential-20260408-120004
+      edge: depends_on
+    - target_id: BS-v5-authority-20260408-120005
+      edge: depends_on
+    - target_id: BS-v6-execution-20260408-120006
+      edge: depends_on
+    - target_id: BS-v7-verification-20260408-120007
+      edge: depends_on
+    - target_id: BS-v8-acceptance-20260408-120008
+      edge: depends_on
+    - target_id: AR-typescript-ref-impl-20260408-120010
+      edge: depends_on
+    - target_id: AR-ajv-2020-12-20260408-120011
+      edge: depends_on
+    - target_id: AR-bundled-schemas-20260408-120012
+      edge: depends_on
+    - target_id: AR-sequential-phases-20260408-120013
+      edge: depends_on
+    - target_id: AR-first-wins-duplicates-20260408-120014
+      edge: depends_on
+    - target_id: AR-no-multidoc-yaml-20260408-120015
+      edge: depends_on
+    - target_id: AR-authority-no-weaken-20260408-120016
+      edge: depends_on
+    - target_id: AR-standalone-package-20260408-120017
+      edge: depends_on
+  downstream: []
+approvals: []
+metadata:
+  change_type: new_feature
+spec:
+  objective: >
+    Implement the full BDSK reference validator as a TypeScript package with
+    an 8-phase sequential pipeline (V1 discovery, V2 schema, V3 trace,
+    V4 referential integrity, V5 authority, V6 execution conformance,
+    V7 verification coverage, V8 acceptance), a CLI entry point
+    (bdsk-validate command), and a library API (validate() function).
+    The validator reads BDSK YAML/JSON artifacts, validates them against
+    the v0.3 specification, and produces a deterministic conformance report.
+  in_scope_paths:
+    - "src/**"
+    - "test/**"
+    - "schemas/**"
+    - "package.json"
+    - "tsconfig.json"
+  out_of_scope_paths:
+    - "bdsk_specification_v_0.md"
+    - "validator-spec.md"
+    - "artifacts/**"
+    - ".claude/**"
+    - "CLAUDE.md"
+    - "ANALYSIS.md"
+  allowed_operations:
+    - create_files
+    - modify_files
+    - run_tests
+    - install_dependencies
+  forbidden_operations:
+    - modify_spec
+    - delete_artifacts
+    - modify_claude_config
+  required_inputs:
+    behaviors:
+      - BS-validator-pipeline-20260408-120000
+      - BS-v1-discovery-20260408-120001
+      - BS-v2-schema-20260408-120002
+      - BS-v3-trace-20260408-120003
+      - BS-v4-referential-20260408-120004
+      - BS-v5-authority-20260408-120005
+      - BS-v6-execution-20260408-120006
+      - BS-v7-verification-20260408-120007
+      - BS-v8-acceptance-20260408-120008
+    assumptions:
+      - AR-typescript-ref-impl-20260408-120010
+      - AR-ajv-2020-12-20260408-120011
+      - AR-bundled-schemas-20260408-120012
+      - AR-sequential-phases-20260408-120013
+      - AR-first-wins-duplicates-20260408-120014
+      - AR-no-multidoc-yaml-20260408-120015
+      - AR-authority-no-weaken-20260408-120016
+      - AR-standalone-package-20260408-120017
+    contracts: []
+    policies: []
+    review_gates: []
+  required_outputs:
+    - generated_diff
+    - verification_artifact
+  escalation_conditions:
+    - "Required npm dependency unavailable or has critical vulnerability"
+    - "Behavior spec ambiguity that could lead to divergent implementations"
+    - "Schema file in schemas/ contradicts the BDSK v0.3 specification"
+    - "Cross-phase data dependency not addressed by the sequential pipeline design"
+  completion_criteria:
+    - "All 8 validation phases (V1-V8) implemented with correct finding codes"
+    - "CLI entry point (bdsk-validate) handles all flags from validator-spec section 7"
+    - "Library API exports validate() and all 8 phase-level functions"
+    - "Conformance report output matches the schema from validator-spec section 9"
+    - "Text, YAML, and JSON output formats supported"
+    - "Edge-kind compatibility matrix encoded as static lookup table"
+    - "Default authority matrix encoded and enforced"
+    - "All changes within approved scope paths"
+    - "Test fixtures cover: conformant repo, missing refs, bad schemas, duplicate IDs, bad traces, authority violations, gate failures, acceptance mismatch"
+    - "npm test passes with zero failures"

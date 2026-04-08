@@ -1,0 +1,41 @@
+kind: behavior_spec
+schema_version: "0.3"
+id: BS-login-001
+title: Login behavior
+status: approved
+owners:
+  - alice
+created_at: "2026-01-01T00:00:00Z"
+updated_at: "2026-01-01T00:00:00Z"
+trace:
+  upstream: []
+  downstream: []
+approvals:
+  - authority_role: product_authority
+    approver: alice
+    approved_at: "2026-01-01T00:00:00Z"
+metadata:
+  tags:
+    - auth
+spec:
+  actor: User
+  goal: Authenticate via login
+  preconditions:
+    - Account exists
+  trigger:
+    type: request
+    action: POST /login
+  examples:
+    - id: EX-login-01
+      given:
+        - User has account with email alice@example.com
+      when:
+        - POST /login with valid credentials
+      then:
+        - JWT token is returned
+  observable_outcomes:
+    - Token issued on valid credentials
+  linked_assumptions: []
+  linked_contracts: []
+  non_goals:
+    - Password reset

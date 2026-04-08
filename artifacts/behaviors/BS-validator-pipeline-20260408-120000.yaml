@@ -1,0 +1,152 @@
+kind: behavior_spec
+schema_version: "0.3"
+id: BS-validator-pipeline-20260408-120000
+title: "BDSK Reference Validator: repository conformance and acceptance eligibility"
+status: approved
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T12:00:00Z"
+updated_at: "2026-04-08T12:00:00Z"
+trace:
+  upstream: []
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T13:00:00Z"
+metadata:
+  tags:
+    - validator
+    - conformance
+    - pipeline
+spec:
+  actor: "Engineer, AI agent, or CI/CD pipeline"
+  goal: >
+    Determine whether a repository of BDSK artifacts conforms to the BDSK v0.3
+    specification by executing an 8-phase validation pipeline (V1 discovery,
+    V2 schema, V3 trace, V4 referential integrity, V5 authority, V6 execution
+    conformance, V7 verification coverage, V8 acceptance) and producing a
+    deterministic, machine-readable conformance report.
+  preconditions:
+    - "A filesystem directory exists containing BDSK artifacts as YAML or JSON files"
+    - "JSON Schema definitions for all 12 BDSK artifact kinds are available (bundled or at a configured path)"
+    - "The validator binary or library is installed and accessible"
+  trigger:
+    type: command
+    action: "bdsk-validate [options] [path]"
+  examples:
+    - id: EX-validator-pipeline-01
+      given:
+        - >
+          A repository at /tmp/conformant-repo/artifacts/ contains 13 artifacts:
+          BS-login-001 (behavior_spec, status: approved),
+          BS-signup-002 (behavior_spec, status: approved),
+          AR-session-001 (assumption_record, status: accepted),
+          CA-api-001 (contract_artifact, status: approved),
+          CP-style-001 (codegen_policy, status: approved),
+          RG-security-001 (review_gate, status: approved, class: blocking),
+          RG-perf-002 (review_gate, status: approved, class: warning),
+          EP-feature-001 (execution_plan, status: approved),
+          GD-feature-001 (generated_diff, upstream traces: produced_by EP-feature-001, implements BS-login-001),
+          VA-login-001 (verification_artifact, proves BS-login-001, execution_result: pass),
+          VA-signup-002 (verification_artifact, proves BS-signup-002, execution_result: pass),
+          EE-security-001 (execution_eval, evaluates RG-security-001, result: pass),
+          EE-perf-002 (execution_eval, evaluates RG-perf-002, result: pass),
+          AD-feature-001 (acceptance_decision, outcome: accepted, approvers: [release_authority])
+        - "All trace references resolve to existing artifacts"
+        - "All authority roles satisfy the default authority matrix"
+        - "All edge-kind triples match the compatibility matrix"
+      when:
+        - "Run: bdsk-validate --format yaml /tmp/conformant-repo"
+      then:
+        - "Exit code is 0"
+        - >
+          Report contains: repository_outcome: conformant,
+          summary.artifact_count: 14, summary.errors: 0, summary.warnings: 0
+        - >
+          execution_results includes EP-feature-001 with outcome: accepted,
+          blocking_failures: [], and evidence listing VA-login-001, VA-signup-002,
+          EE-security-001, EE-perf-002
+        - "Report is valid YAML matching the conformance report schema from section 9 of the validator spec"
+    - id: EX-validator-pipeline-02
+      given:
+        - >
+          A repository at /tmp/bad-repo/artifacts/ contains 4 artifacts:
+          BS-login-001 (behavior_spec, status: approved) in file behaviors/login.yaml,
+          BS-login-001 (behavior_spec, status: draft) in file behaviors/login-v2.yaml (DUPLICATE ID),
+          AR-session-001 (assumption_record, missing required field 'spec'),
+          EP-feature-001 (execution_plan, upstream depends_on references BS-missing-999 which does not exist)
+      when:
+        - "Run: bdsk-validate --format json /tmp/bad-repo"
+      then:
+        - "Exit code is 1"
+        - >
+          Report contains repository_outcome: non_conformant with findings including:
+          BDSK-SCHEMA-001 (severity: error, artifact_id: BS-login-001, message contains 'duplicate'),
+          BDSK-SCHEMA-002 (severity: error, artifact_id: AR-session-001, message contains 'schema validation'),
+          BDSK-REF-001 (severity: error, artifact_id: EP-feature-001, message references BS-missing-999)
+        - "The duplicate artifact (login-v2.yaml) is excluded from further validation phases"
+        - "AR-session-001 is marked schema_invalid and excluded from V4-V8 structural checks"
+        - "All 3 errors are reported in a single run — the pipeline does NOT short-circuit after V1 errors"
+    - id: EX-validator-pipeline-03
+      given:
+        - >
+          A repository at /tmp/mismatch-repo/artifacts/ contains a complete artifact set
+          with EP-release-001 (execution_plan, status: approved) referencing
+          BS-checkout-001 (behavior_spec, status: approved) and
+          RG-security-001 (review_gate, class: blocking, status: approved)
+        - "No verification_artifact exists that proves BS-checkout-001"
+        - "An execution_eval EE-security-001 evaluates RG-security-001 with result: fail"
+        - "No waiver_record exists for RG-security-001"
+        - >
+          AD-release-001 (acceptance_decision) records metadata.outcome: accepted
+          with spec.approvers: [{id: user-1, role: release_authority}]
+      when:
+        - "Run: bdsk-validate --format text /tmp/mismatch-repo"
+      then:
+        - "Exit code is 1"
+        - >
+          Findings include:
+          BDSK-VER-001 (error: BS-checkout-001 lacks verification coverage),
+          BDSK-GATE-001 (error: blocking gate RG-security-001 failed without approved waiver),
+          BDSK-ACC-002 (error: recorded outcome 'accepted' disagrees with computed outcome 'rejected'),
+          BDSK-ACC-004 (error: accepted decision contains unresolved blocking failure)
+        - >
+          execution_results for EP-release-001 shows outcome: rejected with
+          blocking_failures listing BDSK-VER-001 and BDSK-GATE-001
+        - "Text output includes the summary header: 'Repository outcome: NON-CONFORMANT'"
+    - id: EX-validator-pipeline-04
+      given:
+        - "A repository at /tmp/lib-repo/ has the same conformant artifacts as EX-validator-pipeline-01"
+      when:
+        - >
+          Call the library API:
+          const report = await validate({ repositoryPath: '/tmp/lib-repo/', phases: ['v1', 'v2', 'v3'] })
+      then:
+        - "report.repository_outcome is 'conformant'"
+        - "report.summary.errors is 0"
+        - "report.findings is an empty array (no schema, trace, or discovery errors)"
+        - "report.execution_results is empty (V6-V8 were not run, so no execution-level analysis)"
+        - "The returned ConformanceReport object matches the TypeScript ConformanceReport type"
+  observable_outcomes:
+    - "A machine-readable conformance report (YAML or JSON) is produced matching the mandated schema"
+    - "A text summary is produced when --format text is specified"
+    - "Exit code 0 for conformant repositories, 1 for non-conformant, 2 for internal errors"
+    - "All discoverable errors are reported in a single run (no short-circuit on first error)"
+    - "Findings include code, severity, category, artifact_id, message, and details"
+    - "Execution-level results include outcome, blocking failures, warnings, and evidence"
+    - "The library API returns a ConformanceReport promise with identical semantics"
+    - "Output is deterministic: identical input always produces identical output"
+  linked_assumptions:
+    - AR-typescript-ref-impl-20260408-120010
+    - AR-sequential-phases-20260408-120013
+    - AR-standalone-package-20260408-120017
+  linked_contracts: []
+  non_goals:
+    - "This spec does NOT cover execution of AI agents, code generation, test execution, or deployment"
+    - "This spec does NOT define the internal algorithms of individual validation phases (V1-V8 each need their own behavior specs)"
+    - "This spec does NOT cover the edge-kind compatibility matrix rules in detail (covered by a downstream trace-validation spec)"
+    - "This spec does NOT cover custom rule extensibility or plugin loading"
+    - "This spec does NOT define the authority matrix itself — only that the validator checks against it"
+    - "This spec does NOT cover multi-document YAML parsing (explicitly excluded in v1)"
+    - "This spec does NOT cover performance requirements or artifact count limits"

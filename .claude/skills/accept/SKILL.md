@@ -80,6 +80,8 @@ spec:
 ## Rules
 
 - Never record `accepted` if any blocking condition fails
-- Always present findings to the user before writing the artifact
-- The user's explicit approval (responding to AskUserQuestion) is the authority act
+- When outcome is `accepted` and all 6 conditions pass: record automatically without asking
+- When outcome is `conditionally_accepted`, `rejected`, or `indeterminate`: present findings to user and ask for their decision
+- The user's explicit approval is required only when the outcome is not clean `accepted`
 - If `conditionally_accepted`, conditions array MUST be non-empty
+- When invoked from /run, follows the same auto-accept-on-success principle

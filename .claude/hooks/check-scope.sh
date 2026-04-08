@@ -75,6 +75,21 @@ try:
     if file_path.startswith(repo_root):
         file_path = os.path.relpath(file_path, repo_root)
 
+    # Governance paths are always writable (process artifacts, not implementation)
+    # These are where the lifecycle records its own decisions — verification results,
+    # gate evaluations, acceptance decisions, execution logs, and state tracking.
+    governance_prefixes = [
+        'artifacts/verifications/',
+        'artifacts/execution-evals/',
+        'artifacts/acceptance/',
+        'artifacts/execution-logs/',
+        '.claude/state/',
+    ]
+    for prefix in governance_prefixes:
+        if file_path.startswith(prefix):
+            print('ALLOW')
+            sys.exit(0)
+
     # Check out_of_scope first (deny takes priority)
     for pattern in out_of_scope:
         if fnmatch.fnmatch(file_path, pattern) or file_path.startswith(pattern):

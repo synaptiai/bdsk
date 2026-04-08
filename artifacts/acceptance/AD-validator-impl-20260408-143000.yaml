@@ -1,0 +1,43 @@
+kind: acceptance_decision
+schema_version: "0.3"
+id: AD-validator-impl-20260408-143000
+title: "Acceptance decision for BDSK Reference Validator implementation"
+status: recorded
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T14:30:00Z"
+updated_at: "2026-04-08T14:30:00Z"
+trace:
+  upstream:
+    - target_id: EP-validator-impl-20260408-130000
+      edge: depends_on
+  downstream: []
+approvals:
+  - authority_role: release_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T14:30:00Z"
+metadata:
+  outcome: conditionally_accepted
+spec:
+  subject_diffs: []
+  decision_summary: >
+    BDSK reference validator v1.0.0 implementation is conditionally accepted.
+    The 8-phase validation pipeline (V1-V8), CLI (bdsk-validate), library API
+    (validate()), and 3 output formats (text, YAML, JSON) are implemented and
+    tested. All 7 integration tests pass. The implementation stayed within
+    approved scope (src/**, test/**, schemas/**, package.json, tsconfig.json).
+  reasons:
+    - "All 7 integration tests pass (conformant, duplicate-ids, missing-refs, bad-traces, phase-filter, strict-mode, output-formats)"
+    - "Full 8-phase pipeline implements V1 discovery through V8 acceptance per validator-spec.md"
+    - "CLI supports all flags from validator-spec section 7"
+    - "Library API exports validate() and all 8 phase-level functions"
+    - "Scope enforcement hook correctly blocked out-of-scope writes during implementation"
+  conditions:
+    - "Create /verify skill to produce verification_artifact for each behavior spec (closes Algorithm E condition a)"
+    - "Add EP approvals entry (was blocked by scope hook during implementation)"
+    - "Fix AR-first-wins-duplicates authority role from technical_authority to product_authority"
+  residual_risks:
+    - "Verification artifacts do not yet exist — full acceptance requires /verify skill"
+    - "Execution log artifact was not created during implementation (BDSK-EXEC-004 warning)"
+  approvers:
+    - daniel-bentes

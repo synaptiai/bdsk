@@ -20,10 +20,15 @@ All changes in this repo follow the BDSK lifecycle:
 
 ## Available Skills
 
+### Lifecycle (use `/run` for the full pipeline)
+- `/run <feature>` - **full lifecycle in one command**: specify → plan → implement → evaluate → verify → validate → accept. Only 2 human gates (spec review, scope review); everything else automatic.
 - `/specify <feature>` - generate a behavior_spec artifact with concrete examples
 - `/assume <statement>` - capture an assumption as a structured record
 - `/plan-execution` - generate an execution plan from approved specs
-- `/validate` - check all artifacts for schema validity, trace integrity, and coverage
+- `/approve <id|pattern>` - approve artifacts in one command (single, batch, or cascading)
+- `/evaluate` - assess review gates, create execution_eval artifacts
+- `/verify` - run tests, create verification_artifact for each behavior spec
+- `/validate` - run full 8-phase validator (V1-V8) or lightweight fallback
 - `/accept` - compute acceptance eligibility per Algorithm E
 
 ## Rules
@@ -35,7 +40,7 @@ All changes in this repo follow the BDSK lifecycle:
 
 ## Artifacts
 
-BDSK artifacts live in `artifacts/` organized by type. Artifacts are YAML files following the canonical envelope from the spec. AI generates all artifacts; humans review and approve by changing status from `draft` to `approved`.
+BDSK artifacts live in `artifacts/` organized by type. Artifacts are YAML files following the canonical envelope from the spec. AI generates all artifacts; humans review and approve using `/approve <id>` (or `/approve --plan <id>` for cascading approval).
 
 ## Testing
 

@@ -1,0 +1,41 @@
+kind: assumption_record
+schema_version: "0.3"
+id: AR-no-multidoc-yaml-20260408-120015
+title: "Multi-document YAML files are not supported in v1"
+status: accepted
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T12:00:15Z"
+updated_at: "2026-04-08T12:00:15Z"
+trace:
+  upstream:
+    - target_id: BS-v1-discovery-20260408-120001
+      edge: derived_from
+  downstream: []
+approvals:
+  - authority_role: product_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T13:00:00Z"
+metadata:
+  impact_level: low
+  area: product
+spec:
+  statement: >
+    The v1 validator MUST NOT support multi-document YAML files (files
+    containing --- separators with multiple BDSK artifacts per file).
+    Each file MUST contain exactly one artifact. If a multi-document
+    YAML file is encountered, only the first document is parsed; additional
+    documents are silently ignored.
+  rationale: >
+    The validator-spec section 2.4 explicitly states: "Multi-document YAML
+    files (containing --- separators with multiple artifacts per file)
+    MUST NOT be supported in v1." This simplifies the discovery phase and
+    ensures a 1:1 mapping between files and artifacts.
+  source_type: documented
+  source_refs:
+    - "validator-spec.md#2.4"
+  decision_authority: product_authority
+  review_by: "2026-05-08T12:00:00Z"
+  resolution_rule: >
+    Accept as documented. Multi-document support may be added in a future
+    version via a new behavior_spec.

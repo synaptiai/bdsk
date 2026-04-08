@@ -1,0 +1,97 @@
+kind: behavior_spec
+schema_version: "0.3"
+id: BS-v5-authority-20260408-120005
+title: "V5: Authority Validation — verify approval, waiver, and acceptance authority"
+status: approved
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T12:00:05Z"
+updated_at: "2026-04-08T12:00:05Z"
+trace:
+  upstream:
+    - target_id: BS-validator-pipeline-20260408-120000
+      edge: derived_from
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T13:00:00Z"
+metadata:
+  tags:
+    - validator
+    - v5
+    - authority
+spec:
+  actor: "Validator pipeline (phase V5)"
+  goal: >
+    Verify that every artifact approval, waiver grant, escalation target, and
+    acceptance decision is backed by the required authority role per the default
+    authority matrix (or a stricter custom matrix). Implements AU-1, AU-3, AU-4,
+    and AU-5.
+  preconditions:
+    - "V1-V4 have completed"
+    - "ArtifactIndex is available"
+    - "The default authority matrix is loaded; optional custom config may override (only stricter)"
+  trigger:
+    type: event
+    action: "Pipeline invokes validateAuthority(index, config?)"
+  examples:
+    - id: EX-v5-authority-01
+      given:
+        - >
+          ArtifactIndex contains:
+          BS-login-001 (behavior_spec, status: approved,
+            approvals: [{approver: alice, role: product_authority, date: "2026-03-01"}]),
+          CP-style-001 (codegen_policy, status: approved,
+            approvals: [{approver: bob, role: technical_authority, date: "2026-03-02"}]),
+          WR-perf-001 (waiver_record, status: approved,
+            spec.authority: {id: charlie, role: qa_authority},
+            spec.waived_target: RG-perf-002),
+          RG-perf-002 (review_gate, class: warning),
+          AD-feature-001 (acceptance_decision, metadata.outcome: accepted,
+            spec.approvers: [{id: dana, role: release_authority}])
+        - "Default authority matrix is in effect (no custom config)"
+      when:
+        - "validateAuthority(index) is called"
+      then:
+        - "No findings — all authority checks pass"
+        - "AU-1: product_authority satisfies behavior_spec approval"
+        - "AU-1: technical_authority satisfies codegen_policy approval"
+        - "AU-3: qa_authority satisfies waiver for warning-class gate"
+        - "AU-5: release_authority satisfies acceptance decision"
+    - id: EX-v5-authority-02
+      given:
+        - >
+          ArtifactIndex contains:
+          BS-login-001 (behavior_spec, status: approved,
+            approvals: [{approver: intern, role: observer}]),
+          WR-security-001 (waiver_record, status: approved,
+            spec.authority: {id: bob, role: technical_authority},
+            spec.waived_target: RG-security-001),
+          RG-security-001 (review_gate, class: blocking, metadata.tags: [security]),
+          AD-feature-001 (acceptance_decision, metadata.outcome: accepted,
+            spec.approvers: [])
+        - >
+          A trace with edge: escalates_to targets authority role "undefined_role"
+          which is not in the authority matrix or custom_roles
+      when:
+        - "validateAuthority(index) is called"
+      then:
+        - "BDSK-AUTH-001 (error): BS-login-001 approved by 'observer' but requires product_authority or technical_authority"
+        - "BDSK-AUTH-002 (error): WR-security-001 waiver of blocking security gate requires security_authority, not technical_authority"
+        - "BDSK-AUTH-003 (error): AD-feature-001 has empty approvers list, does not satisfy release_authority requirement"
+        - "BDSK-AUTH-004 (error): escalation target 'undefined_role' is not a recognized authority"
+  observable_outcomes:
+    - "BDSK-AUTH-001 when an approval lacks the required authority role"
+    - "BDSK-AUTH-002 when waiver authority is insufficient for the target class"
+    - "BDSK-AUTH-003 when acceptance approver set does not satisfy the authority matrix"
+    - "BDSK-AUTH-004 when an escalation target is an undefined authority"
+    - "Custom authority configs that weaken the defaults are rejected by the validator"
+  linked_assumptions:
+    - AR-authority-no-weaken-20260408-120016
+  linked_contracts: []
+  non_goals:
+    - "V5 does NOT authenticate identity (it trusts the recorded approver/role mappings)"
+    - "V5 does NOT define or manage authority roles — it only checks against the matrix"
+    - "V5 does NOT verify timestamps or ordering of approvals"
+    - "V5 does NOT enforce custom authority rules beyond the config mechanism"

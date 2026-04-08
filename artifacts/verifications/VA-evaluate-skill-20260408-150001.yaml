@@ -1,0 +1,25 @@
+kind: verification_artifact
+schema_version: "0.3"
+id: VA-evaluate-skill-20260408-150001
+title: "Verification for /evaluate skill"
+status: draft
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T15:00:01Z"
+updated_at: "2026-04-08T15:00:01Z"
+trace:
+  upstream:
+    - target_id: BS-evaluate-skill-20260408-140100
+      edge: proves
+  downstream: []
+approvals: []
+metadata:
+  verification_type: acceptance_test
+spec:
+  location: ".claude/skills/evaluate/SKILL.md"
+  proves:
+    - BS-evaluate-skill-20260408-140100
+  execution_result: pass
+  evidence_refs:
+    - "test/verify-output-20260408-150000.txt"
+    - ".claude/skills/evaluate/SKILL.md exists with correct structure"

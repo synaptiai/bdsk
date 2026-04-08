@@ -1,0 +1,105 @@
+kind: behavior_spec
+schema_version: "0.3"
+id: BS-v4-referential-20260408-120004
+title: "V4: Referential Integrity — RI-1 through RI-10 cross-artifact checks"
+status: approved
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T12:00:04Z"
+updated_at: "2026-04-08T12:00:04Z"
+trace:
+  upstream:
+    - target_id: BS-validator-pipeline-20260408-120000
+      edge: derived_from
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T13:00:00Z"
+metadata:
+  tags:
+    - validator
+    - v4
+    - referential-integrity
+spec:
+  actor: "Validator pipeline (phase V4)"
+  goal: >
+    Check cross-artifact referential integrity across 10 sub-rules (RI-1 through
+    RI-10): target existence, kind compatibility, governing input approval state,
+    diff mapping completeness, verification coverage, gate evaluation coverage,
+    waiver target validity, acceptance evidence, supersession consistency, and
+    execution completion integrity.
+  preconditions:
+    - "V1-V3 have completed"
+    - "ArtifactIndex and reverse-reference index are available"
+    - "Only schema-valid artifacts with well-formed traces are checked"
+  trigger:
+    type: event
+    action: "Pipeline invokes validateReferentialIntegrity(index)"
+  examples:
+    - id: EX-v4-referential-01
+      given:
+        - >
+          ArtifactIndex contains:
+          EP-feature-001 (execution_plan, status: approved,
+            spec.required_inputs.behaviors: [BS-login-001],
+            spec.required_inputs.review_gates: [RG-security-001],
+            upstream depends_on: [BS-login-001, AR-session-001, RG-security-001])
+        - "BS-login-001 (behavior_spec, status: approved)"
+        - "AR-session-001 (assumption_record, status: accepted)"
+        - "RG-security-001 (review_gate, status: approved)"
+        - "GD-feature-001 (generated_diff, upstream: produced_by EP-feature-001, implements BS-login-001)"
+        - "VA-login-001 (verification_artifact, proves BS-login-001, execution_result: pass)"
+        - "EE-security-001 (execution_eval, evaluates RG-security-001, result: pass)"
+      when:
+        - "validateReferentialIntegrity(index) is called"
+      then:
+        - "No findings are recorded — all 10 RI checks pass"
+        - "RI-1: all target_ids resolve"
+        - "RI-3: BS-login-001 is approved, AR-session-001 is accepted"
+        - "RI-4: GD-feature-001 has both produced_by and implements traces"
+        - "RI-5: BS-login-001 has verification coverage via VA-login-001"
+        - "RI-6: RG-security-001 has eval coverage via EE-security-001"
+    - id: EX-v4-referential-02
+      given:
+        - >
+          ArtifactIndex contains:
+          EP-feature-001 (execution_plan, status: approved,
+            spec.required_inputs.behaviors: [BS-login-001, BS-signup-002],
+            spec.required_inputs.review_gates: [RG-security-001],
+            upstream depends_on: [BS-login-001, BS-signup-002, AR-missing-999, RG-security-001])
+        - "BS-login-001 (behavior_spec, status: draft — NOT approved)"
+        - "BS-signup-002 (behavior_spec, status: approved)"
+        - "AR-missing-999 does NOT exist in the index"
+        - "RG-security-001 (review_gate, status: approved)"
+        - "GD-feature-001 (generated_diff, upstream: produced_by EP-feature-001 — but NO implements edge)"
+        - "No verification_artifact proves BS-login-001 or BS-signup-002"
+        - "No execution_eval evaluates RG-security-001"
+        - "WR-bad-001 (waiver_record, spec.waived_target: RG-nonexistent-999)"
+      when:
+        - "validateReferentialIntegrity(index) is called"
+      then:
+        - "BDSK-REF-001 (error): AR-missing-999 does not resolve (RI-1)"
+        - "BDSK-REF-002 (error): BS-login-001 is in status 'draft', not 'approved' (RI-3)"
+        - "BDSK-REF-005 (error): GD-feature-001 missing 'implements' edge to a behavior_spec (RI-4)"
+        - "BDSK-REF-003 (error): BS-login-001 lacks verification coverage (RI-5)"
+        - "BDSK-REF-003 (error): BS-signup-002 lacks verification coverage (RI-5)"
+        - "BDSK-REF-004 (error): RG-security-001 has no execution_eval and no approved waiver (RI-6)"
+        - "BDSK-WAIVER-001 (error): WR-bad-001 waives RG-nonexistent-999 which does not exist (RI-7)"
+  observable_outcomes:
+    - "BDSK-REF-001 for dangling target_id references"
+    - "BDSK-REF-002 for governing inputs not in approved/accepted status"
+    - "BDSK-REF-003 for behavior specs lacking verification coverage"
+    - "BDSK-REF-004 for review gates lacking execution eval coverage"
+    - "BDSK-REF-005 for generated diffs missing required behavior mapping"
+    - "BDSK-WAIVER-001 for waivers targeting non-existent or non-waivable artifacts"
+    - "BDSK-ACC-001 for acceptance decisions with incomplete evidence"
+    - "Warnings for superseded artifacts modified after supersession and expired waivers"
+  linked_assumptions: []
+  linked_contracts: []
+  non_goals:
+    - "V4 does NOT re-validate schema or trace structure (covered by V2 and V3)"
+    - "V4 does NOT check authority roles (covered by V5)"
+    - "V4 does NOT evaluate gate pass/fail logic (covered by V6 Algorithm C)"
+    - "V4 does NOT compute acceptance eligibility (covered by V8)"
+    - "Each RI sub-rule runs independently — failure in one does not skip others"

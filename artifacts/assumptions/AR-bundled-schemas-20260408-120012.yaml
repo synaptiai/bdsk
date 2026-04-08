@@ -1,0 +1,44 @@
+kind: assumption_record
+schema_version: "0.3"
+id: AR-bundled-schemas-20260408-120012
+title: "Validator bundles schemas from this repository's schemas/ directory"
+status: accepted
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T12:00:12Z"
+updated_at: "2026-04-08T12:00:12Z"
+trace:
+  upstream:
+    - target_id: BS-v2-schema-20260408-120002
+      edge: derived_from
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T13:00:00Z"
+metadata:
+  impact_level: high
+  area: architecture
+spec:
+  statement: >
+    The validator will bundle the 12 kind-specific JSON Schema files plus
+    common.json from this repository's schemas/ directory as its canonical
+    schema definitions. These bundled schemas are the source of truth for V2
+    validation. Users may override with --schemas-dir, but the defaults are
+    the bundled copies.
+  rationale: >
+    The validator-spec section 5.2 states "JSON Schema definitions MUST be
+    bundled with the validator." The schemas/ directory in this repository
+    contains all 13 schema files. Bundling ensures the validator works
+    without external dependencies and that schema versions are locked to
+    the validator release.
+  source_type: decision
+  source_refs:
+    - "validator-spec.md#5.2"
+    - "schemas/"
+  decision_authority: technical_authority
+  review_by: "2026-05-08T12:00:00Z"
+  resolution_rule: >
+    Must be accepted before the build pipeline is configured. If the schemas
+    diverge from the bundled copy at runtime, behavior is undefined — this
+    assumption must be validated.

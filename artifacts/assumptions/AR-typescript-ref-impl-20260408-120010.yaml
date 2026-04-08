@@ -1,0 +1,46 @@
+kind: assumption_record
+schema_version: "0.3"
+id: AR-typescript-ref-impl-20260408-120010
+title: "TypeScript is the reference implementation language"
+status: accepted
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T12:00:10Z"
+updated_at: "2026-04-08T12:00:10Z"
+trace:
+  upstream:
+    - target_id: BS-validator-pipeline-20260408-120000
+      edge: derived_from
+  downstream:
+    - target_id: BS-v1-discovery-20260408-120001
+      edge: constrains
+    - target_id: BS-v2-schema-20260408-120002
+      edge: constrains
+approvals:
+  - authority_role: technical_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T13:00:00Z"
+metadata:
+  impact_level: high
+  area: architecture
+spec:
+  statement: >
+    The reference validator implementation will be written in TypeScript.
+    The validator-spec is language-agnostic in its interfaces and algorithms,
+    but recommends TypeScript for its YAML/JSON parsing strengths, mature
+    JSON Schema validation libraries (ajv), and precise type system.
+    Python, Rust, or Go implementations following the same interfaces are
+    equally valid.
+  rationale: >
+    The validator-spec section 2.1 recommends TypeScript. The existing project
+    scaffold (package.json, tsconfig.json) is already TypeScript. Choosing a
+    different language would require new project setup and would not align
+    with the existing scaffold.
+  source_type: decision
+  source_refs:
+    - "validator-spec.md#2.1"
+  decision_authority: technical_authority
+  review_by: "2026-05-08T12:00:00Z"
+  resolution_rule: >
+    Must be accepted before implementation begins. If rejected, the alternative
+    language must be selected and the project scaffold must be regenerated.

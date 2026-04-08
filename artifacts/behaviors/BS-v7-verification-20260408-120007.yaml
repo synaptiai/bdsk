@@ -1,0 +1,85 @@
+kind: behavior_spec
+schema_version: "0.3"
+id: BS-v7-verification-20260408-120007
+title: "V7: Verification Coverage — Algorithm D (behavior and contract coverage)"
+status: approved
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T12:00:07Z"
+updated_at: "2026-04-08T12:00:07Z"
+trace:
+  upstream:
+    - target_id: BS-validator-pipeline-20260408-120000
+      edge: derived_from
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T13:00:00Z"
+metadata:
+  tags:
+    - validator
+    - v7
+    - verification
+    - algorithm-d
+spec:
+  actor: "Validator pipeline (phase V7)"
+  goal: >
+    Implement Algorithm D: for each execution plan, verify that every required
+    behavior spec has at least one passing verification artifact (proves edge),
+    every referenced contract has verification coverage, and no artifact serves
+    as both verification and execution eval evidence.
+  preconditions:
+    - "V1-V6 have completed"
+    - "ArtifactIndex with reverse-reference index is available"
+  trigger:
+    type: event
+    action: "Pipeline invokes validateVerificationCoverage(index)"
+  examples:
+    - id: EX-v7-verification-01
+      given:
+        - >
+          EP-feature-001 (execution_plan,
+            spec.required_inputs.behaviors: [BS-login-001, BS-signup-002],
+            upstream depends_on references include CA-api-001)
+        - "VA-login-001 (verification_artifact, proves BS-login-001, spec.execution_result: pass)"
+        - "VA-signup-001 (verification_artifact, proves BS-signup-002, spec.execution_result: pass)"
+        - "VA-api-001 (verification_artifact, proves CA-api-001, spec.execution_result: pass)"
+        - "No artifact ID appears as both a verification_artifact and an execution_eval"
+      when:
+        - "validateVerificationCoverage(index) is called"
+      then:
+        - "No findings — all behavior specs have passing verification"
+        - "No findings — contract CA-api-001 has verification coverage"
+        - "No findings — separation check passes"
+    - id: EX-v7-verification-02
+      given:
+        - >
+          EP-release-001 (execution_plan,
+            spec.required_inputs.behaviors: [BS-checkout-001, BS-payment-002],
+            upstream depends_on references include CA-payment-001)
+        - "No verification_artifact exists that proves BS-checkout-001"
+        - "VA-payment-001 (verification_artifact, proves BS-payment-002, spec.execution_result: fail)"
+        - "No verification_artifact proves CA-payment-001"
+        - >
+          VA-dual-001 has id that also appears as an execution_eval
+          (same artifact ID used in both verification and eval roles)
+      when:
+        - "validateVerificationCoverage(index) is called"
+      then:
+        - "BDSK-VER-001 (error): BS-checkout-001 has no verification artifact"
+        - "BDSK-VER-003 (error): VA-payment-001 proves BS-payment-002 but execution_result is 'fail'"
+        - "BDSK-VER-002 (error): CA-payment-001 has no verification artifact"
+        - "BDSK-VER-004 (warning): VA-dual-001 appears as both verification_artifact and execution_eval"
+  observable_outcomes:
+    - "BDSK-VER-001 when a behavior spec has no verification artifact proving it"
+    - "BDSK-VER-002 when a contract artifact has no verification artifact proving it"
+    - "BDSK-VER-003 when a verification artifact exists but its execution_result is 'fail'"
+    - "BDSK-VER-004 (warning) when an artifact ID is used as both verification and eval evidence"
+  linked_assumptions: []
+  linked_contracts: []
+  non_goals:
+    - "V7 does NOT run tests or verify code correctness"
+    - "V7 does NOT evaluate the quality of verification artifacts"
+    - "V7 does NOT check verification artifact content beyond existence and result status"
+    - "V7 does NOT determine acceptance — it feeds into V8"

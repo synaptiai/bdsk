@@ -1,0 +1,90 @@
+kind: behavior_spec
+schema_version: "0.3"
+id: BS-v2-schema-20260408-120002
+title: "V2: Schema Validation — validate artifacts against JSON Schema definitions"
+status: approved
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T12:00:02Z"
+updated_at: "2026-04-08T12:00:02Z"
+trace:
+  upstream:
+    - target_id: BS-validator-pipeline-20260408-120000
+      edge: derived_from
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T13:00:00Z"
+metadata:
+  tags:
+    - validator
+    - v2
+    - schema
+spec:
+  actor: "Validator pipeline (phase V2)"
+  goal: >
+    Validate each artifact's raw content against the JSON Schema definition
+    corresponding to its kind, check schema_version compatibility, and mark
+    failing artifacts as schema_invalid so downstream phases can skip them.
+  preconditions:
+    - "V1 has completed and produced an ArtifactIndex"
+    - "JSON Schema definitions for all 12 artifact kinds plus common.json are loaded"
+  trigger:
+    type: event
+    action: "Pipeline invokes validateSchemas(index, schemas)"
+  examples:
+    - id: EX-v2-schema-01
+      given:
+        - >
+          ArtifactIndex contains BS-login-001 (behavior_spec) with raw content:
+          kind: behavior_spec, schema_version: "0.3", id: BS-login-001,
+          title: "Login behavior", status: draft, owners: [alice],
+          created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z",
+          trace: {upstream: [], downstream: []}, metadata: {tags: []},
+          spec: {actor: "User", goal: "Authenticate", preconditions: ["Account exists"],
+          trigger: {type: request, action: "POST /login"},
+          examples: [{id: EX-01, given: ["..."], when: ["..."], then: ["..."]}],
+          observable_outcomes: ["Token issued"], linked_assumptions: [],
+          linked_contracts: [], non_goals: ["Password reset"]}
+      when:
+        - "validateSchemas(index, schemaMap) is called"
+      then:
+        - "BS-login-001 passes validation — no findings recorded"
+        - "BS-login-001 is NOT marked schema_invalid"
+    - id: EX-v2-schema-02
+      given:
+        - >
+          ArtifactIndex contains AR-bad-001 (assumption_record) with raw content
+          missing required field 'spec' entirely, and has schema_version: "0.2"
+        - >
+          ArtifactIndex also contains EP-plan-001 (execution_plan) with raw content
+          where spec.required_inputs is missing the required 'behaviors' array
+      when:
+        - "validateSchemas(index, schemaMap) is called"
+      then:
+        - >
+          Findings include BDSK-SCHEMA-002 for AR-bad-001 with details containing
+          the JSON Schema error path "/spec" and message "required property 'spec' is missing"
+        - >
+          Findings include BDSK-SCHEMA-003 for AR-bad-001 with message
+          "unsupported schema_version '0.2', expected '0.3'"
+        - >
+          Findings include BDSK-SCHEMA-002 for EP-plan-001 with details containing
+          the JSON Schema error path "/spec/required_inputs/behaviors"
+        - "AR-bad-001 and EP-plan-001 are both marked schema_invalid in the index"
+        - "Schema-invalid artifacts are excluded from V4-V8 structural checks"
+  observable_outcomes:
+    - "BDSK-SCHEMA-002 is recorded for each JSON Schema validation failure with error path and message in details"
+    - "BDSK-SCHEMA-003 is recorded when schema_version is not '0.3'"
+    - "Failing artifacts are annotated as schema_invalid in the index"
+    - "Downstream phases (V4-V8) skip schema_invalid artifacts for structural checks"
+  linked_assumptions:
+    - AR-ajv-2020-12-20260408-120011
+    - AR-bundled-schemas-20260408-120012
+  linked_contracts: []
+  non_goals:
+    - "V2 does NOT check trace semantics (edge validity, referential integrity)"
+    - "V2 does NOT validate business logic or cross-artifact consistency"
+    - "V2 does NOT modify or coerce artifact content to fix schema errors"
+    - "V2 does NOT support JSON Schema versions other than 2020-12"

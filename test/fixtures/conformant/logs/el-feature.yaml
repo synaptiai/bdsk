@@ -1,0 +1,30 @@
+kind: execution_log
+schema_version: "0.3"
+id: EL-feature-001
+title: Login feature execution log
+status: completed
+owners:
+  - alice
+created_at: "2026-01-03T00:00:00Z"
+updated_at: "2026-01-04T00:00:00Z"
+trace:
+  upstream:
+    - target_id: EP-feature-001
+      edge: depends_on
+  downstream: []
+approvals: []
+metadata:
+  executor_type: ai_agent
+spec:
+  consulted_artifacts:
+    - BS-login-001
+    - AR-session-001
+  steps:
+    - "Generated login endpoint code"
+    - "Generated JWT utility module"
+    - "Ran security scan"
+  emitted_outputs:
+    - GD-feature-001
+  surfaced_uncertainties: []
+  stop_conditions_triggered: []
+  final_state: completed

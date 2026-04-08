@@ -1,0 +1,100 @@
+kind: behavior_spec
+schema_version: "0.3"
+id: BS-v1-discovery-20260408-120001
+title: "V1: Artifact Discovery — scan filesystem and build ArtifactIndex"
+status: approved
+owners:
+  - daniel-bentes
+created_at: "2026-04-08T12:00:01Z"
+updated_at: "2026-04-08T12:00:01Z"
+trace:
+  upstream:
+    - target_id: BS-validator-pipeline-20260408-120000
+      edge: derived_from
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T13:00:00Z"
+metadata:
+  tags:
+    - validator
+    - v1
+    - discovery
+spec:
+  actor: "Validator pipeline (phase V1)"
+  goal: >
+    Scan a filesystem directory for BDSK artifact files (.yaml, .yml, .json),
+    parse each file, validate it has a recognized kind and unique ID, build
+    an ArtifactIndex with forward and reverse trace indices, and report any
+    discovery-phase findings.
+  preconditions:
+    - "A filesystem path (repository root) is provided"
+    - "The artifacts directory exists (default: <repo>/artifacts/)"
+  trigger:
+    type: event
+    action: "Pipeline invokes discoverArtifacts(path, options)"
+  examples:
+    - id: EX-v1-discovery-01
+      given:
+        - >
+          Directory /tmp/repo/artifacts/ contains 3 files:
+          behaviors/login.yaml (kind: behavior_spec, id: BS-login-001),
+          assumptions/session.yaml (kind: assumption_record, id: AR-session-001),
+          plans/feature.yaml (kind: execution_plan, id: EP-feature-001)
+        - "All 3 files are valid YAML with kind and id fields"
+        - "No duplicate IDs exist"
+      when:
+        - "discoverArtifacts('/tmp/repo') is called"
+      then:
+        - "ArtifactIndex.byId contains 3 entries keyed by BS-login-001, AR-session-001, EP-feature-001"
+        - "ArtifactIndex.byKind maps behavior_spec to [BS-login-001], assumption_record to [AR-session-001], execution_plan to [EP-feature-001]"
+        - "Each ParsedArtifact has source_path set to the absolute file path where it was loaded"
+        - "Findings list is empty"
+    - id: EX-v1-discovery-02
+      given:
+        - >
+          Directory /tmp/bad-repo/artifacts/ contains 5 files:
+          behaviors/login.yaml (kind: behavior_spec, id: BS-login-001),
+          behaviors/login-copy.yaml (kind: behavior_spec, id: BS-login-001 — DUPLICATE),
+          broken.yaml (contains invalid YAML syntax: unmatched bracket on line 3),
+          readme.md (not a YAML/JSON file — should be ignored by extension filter),
+          unknown.yaml (kind: rocket_ship, id: RS-001 — unrecognized kind)
+      when:
+        - "discoverArtifacts('/tmp/bad-repo') is called"
+      then:
+        - "ArtifactIndex.byId contains 1 entry: BS-login-001 (from login.yaml, the first encountered)"
+        - "Findings include BDSK-SCHEMA-001 (error, artifact_id: BS-login-001, message: duplicate artifact id, details include path of login-copy.yaml)"
+        - "Findings include BDSK-SCHEMA-002 (error, artifact_id: null, message: YAML parse failure, details include path of broken.yaml)"
+        - "Findings include BDSK-SCHEMA-002 (error, artifact_id: null, message: unrecognized kind 'rocket_ship')"
+        - "readme.md is not processed (extension filter excludes .md files)"
+        - "unknown.yaml with kind: rocket_ship is skipped after recording the finding"
+    - id: EX-v1-discovery-03
+      given:
+        - >
+          Directory /tmp/repo/artifacts/ contains 2 files:
+          data/metrics.yaml (valid YAML but has no 'kind' field — just arbitrary data),
+          behaviors/signup.json (valid JSON, kind: behavior_spec, id: BS-signup-001)
+      when:
+        - "discoverArtifacts('/tmp/repo') is called"
+      then:
+        - "metrics.yaml is skipped silently (no kind field — not a BDSK artifact)"
+        - "ArtifactIndex.byId contains 1 entry: BS-signup-001"
+        - "Findings list is empty (silently skipping non-BDSK files is not an error)"
+  observable_outcomes:
+    - "An ArtifactIndex is returned with byId and byKind maps populated"
+    - "A reverse-reference index is built from all trace references across indexed artifacts"
+    - "BDSK-SCHEMA-001 is recorded for each duplicate artifact ID"
+    - "BDSK-SCHEMA-002 is recorded for each unparseable file, missing id, or unrecognized kind"
+    - "Files without a kind field are silently skipped"
+    - "Files not matching .yaml, .yml, or .json extensions are ignored"
+  linked_assumptions:
+    - AR-first-wins-duplicates-20260408-120014
+    - AR-no-multidoc-yaml-20260408-120015
+  linked_contracts: []
+  non_goals:
+    - "V1 does NOT validate artifact contents against JSON Schema (that is V2)"
+    - "V1 does NOT check trace edge validity or referential integrity"
+    - "V1 does NOT support multi-document YAML files (multiple artifacts per file)"
+    - "V1 does NOT recursively resolve symbolic links"
+    - "V1 does NOT define file ordering guarantees beyond 'first encountered wins' for duplicates"

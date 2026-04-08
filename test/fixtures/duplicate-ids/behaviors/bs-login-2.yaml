@@ -1,0 +1,31 @@
+kind: behavior_spec
+schema_version: "0.3"
+id: BS-login-001
+title: Login behavior (DUPLICATE)
+status: draft
+owners:
+  - bob
+created_at: "2026-02-01T00:00:00Z"
+updated_at: "2026-02-01T00:00:00Z"
+trace:
+  upstream: []
+  downstream: []
+approvals: []
+metadata:
+  tags: []
+spec:
+  actor: User
+  goal: Login v2
+  preconditions: []
+  trigger:
+    type: request
+    action: POST /v2/login
+  examples:
+    - id: EX-01
+      given: ["Account exists"]
+      when: ["POST /v2/login"]
+      then: ["Token returned"]
+  observable_outcomes: ["Token issued"]
+  linked_assumptions: []
+  linked_contracts: []
+  non_goals: ["Password reset"]
