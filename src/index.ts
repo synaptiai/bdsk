@@ -142,7 +142,7 @@ export async function validate(options: ValidateOptions): Promise<ConformanceRep
     .filter((ep) => !options.executionFilter || options.executionFilter.includes(ep.id));
 
   const executionResults = executionPlans.map((ep) =>
-    computeExecutionResult(index, ep.id, allFindings),
+    computeExecutionResult(index, ep.id, finalFindings),
   );
 
   const report: ConformanceReport = {

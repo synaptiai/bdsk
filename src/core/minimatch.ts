@@ -3,14 +3,19 @@
  * Supports: * (any segment chars), ** (any path segments), ? (single char)
  */
 export function minimatch(path: string, pattern: string): boolean {
-  // Convert glob pattern to regex
-  const regexStr = pattern
-    .replace(/\./g, "\\.")
-    .replace(/\*\*/g, "{{GLOBSTAR}}")
-    .replace(/\*/g, "[^/]*")
-    .replace(/\?/g, "[^/]")
-    .replace(/\{\{GLOBSTAR\}\}/g, ".*");
+  try {
+    // Escape regex-special chars first, preserving glob chars (* ? **)
+    const escaped = pattern
+      .replace(/[{}()[\]+^$|\\]/g, "\\$&")
+      .replace(/\./g, "\\.")
+      .replace(/\*\*/g, "{{GLOBSTAR}}")
+      .replace(/\*/g, "[^/]*")
+      .replace(/\?/g, "[^/]")
+      .replace(/\{\{GLOBSTAR\}\}/g, ".*");
 
-  const regex = new RegExp(`^${regexStr}$`);
-  return regex.test(path);
+    return new RegExp(`^${escaped}$`).test(path);
+  } catch {
+    // Invalid pattern — treat as non-match rather than crash
+    return false;
+  }
 }

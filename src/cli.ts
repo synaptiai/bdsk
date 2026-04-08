@@ -35,9 +35,15 @@ function parseArgs(args: string[]): {
     path: ".",
   };
 
+  const needsValue = new Set(["--format", "-f", "--output", "-o", "--artifacts-dir", "-a", "--schemas-dir", "-s", "--config", "-c", "--phase", "-p", "--execution", "-e"]);
+
   let i = 0;
   while (i < args.length) {
     const arg = args[i];
+    if (needsValue.has(arg) && i + 1 >= args.length) {
+      console.error(`Missing value for ${arg}`);
+      process.exit(2);
+    }
     switch (arg) {
       case "--format": case "-f":
         result.format = args[++i] as typeof result.format;
@@ -91,6 +97,11 @@ async function main() {
     process.exit(0);
   }
 
+  if (!["text", "yaml", "json"].includes(args.format)) {
+    console.error(`Unknown format '${args.format}'. Valid formats: text, yaml, json`);
+    process.exit(2);
+  }
+
   const phases = args.phase === "all"
     ? undefined
     : [args.phase as Phase];
@@ -105,11 +116,6 @@ async function main() {
       executionFilter: args.execution ? [args.execution] : undefined,
       strict: args.strict,
     });
-
-    if (!["text", "yaml", "json"].includes(args.format)) {
-      console.error(`Unknown format '${args.format}'. Valid formats: text, yaml, json`);
-      process.exit(2);
-    }
 
     let formatted: string;
     switch (args.format) {

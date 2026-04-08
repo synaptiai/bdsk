@@ -66,7 +66,15 @@ export function discoverArtifacts(
   let files: string[];
   try {
     files = walkDir(artDir, extensions).sort(); // sort for deterministic ordering
-  } catch {
+  } catch (e) {
+    findings.push({
+      code: "BDSK-SCHEMA-002",
+      severity: "error",
+      category: "schema",
+      artifact_id: null,
+      message: `Cannot read artifact directory '${artDir}': ${e instanceof Error ? e.message : String(e)}`,
+      details: { artifacts_dir: artDir },
+    });
     return { index, findings };
   }
 

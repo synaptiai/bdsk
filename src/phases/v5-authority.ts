@@ -118,7 +118,8 @@ function au3_waiverAuthority(
 
     const gateMeta = target.metadata as Record<string, unknown>;
     const tags = gateMeta.tags as string[] | undefined;
-    const isSecurity = tags?.includes("security") || gateMeta.subject === "security";
+    // review_gate schema: metadata.subject is an enum including "security"
+    const isSecurity = (gateMeta.subject as string | undefined) === "security";
     const isBlocking = gateMeta.gate_class === "blocking";
 
     let action: AuthorityAction;

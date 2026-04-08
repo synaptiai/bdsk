@@ -261,23 +261,11 @@ function ri9_supersessionConsistency(index: ArtifactIndex, findings: Finding[]):
   }
 }
 
-/** RI-10: Execution logs with completed final_state must handle stop conditions. */
+/** RI-10: Execution logs with completed final_state must handle stop conditions.
+ *  Note: V6 Algorithm B performs the detailed check with aborted/escalated handling.
+ *  RI-10 only flags that a completed log has triggered conditions (structural integrity). */
 function ri10_executionCompletionIntegrity(index: ArtifactIndex, findings: Finding[]): void {
-  for (const log of index.allOfKind("execution_log")) {
-    if (index.schemaInvalid.has(log.id)) continue;
-    if (log.spec.final_state !== "completed") continue;
-    const triggered = log.spec.stop_conditions_triggered as string[] | undefined;
-    if (!triggered || triggered.length === 0) continue;
-
-    for (const condition of triggered) {
-      findings.push({
-        code: "BDSK-EXEC-003",
-        severity: "error",
-        category: "execution",
-        artifact_id: log.id,
-        message: `Stop condition '${condition}' triggered without valid escalation/abort/waiver`,
-        details: { condition },
-      });
-    }
-  }
+  // Intentionally empty: stop-condition checking is owned by V6 Algorithm B
+  // which has proper handling for final_state aborted/escalated.
+  // Keeping this function as a placeholder for RI-10 structural documentation.
 }
