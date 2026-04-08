@@ -1,20 +1,27 @@
-import { readdirSync, readFileSync, statSync } from "fs";
-import { join, resolve, extname } from "path";
+import { readdirSync, readFileSync } from "fs";
+import { join, resolve, extname, relative } from "path";
 import { parse as parseYaml } from "yaml";
+import { minimatch } from "../core/minimatch.js";
 import { ArtifactIndex } from "../core/artifact-index.js";
 import { ARTIFACT_KINDS, type ArtifactKind, type ParsedArtifact, type Trace } from "../types/artifact.js";
 import type { Finding } from "../types/findings.js";
 
-const VALID_EXTENSIONS = new Set([".yaml", ".yml", ".json"]);
+const DEFAULT_EXTENSIONS = new Set([".yaml", ".yml", ".json"]);
 const VALID_KINDS = new Set<string>(ARTIFACT_KINDS);
 
-function walkDir(dir: string): string[] {
+export interface DiscoveryOptions {
+  fileExtensions?: string[];
+  ignorePaths?: string[];
+}
+
+function walkDir(dir: string, extensions: Set<string>): string[] {
   const results: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
+    if (entry.isSymbolicLink()) continue; // skip symlinks for safety
     if (entry.isDirectory()) {
-      results.push(...walkDir(full));
-    } else if (entry.isFile() && VALID_EXTENSIONS.has(extname(entry.name).toLowerCase())) {
+      results.push(...walkDir(full, extensions));
+    } else if (entry.isFile() && extensions.has(extname(entry.name).toLowerCase())) {
       results.push(full);
     }
   }
@@ -29,9 +36,16 @@ export interface DiscoveryResult {
 export function discoverArtifacts(
   repoRoot: string,
   artifactsDir: string = "artifacts/",
+  options?: DiscoveryOptions,
 ): DiscoveryResult {
   const index = new ArtifactIndex();
   const findings: Finding[] = [];
+
+  const extensions = options?.fileExtensions
+    ? new Set(options.fileExtensions.map((e) => e.startsWith(".") ? e : `.${e}`))
+    : DEFAULT_EXTENSIONS;
+
+  const ignorePaths = options?.ignorePaths ?? [];
 
   const artDir = resolve(repoRoot, artifactsDir);
 
@@ -51,12 +65,18 @@ export function discoverArtifacts(
 
   let files: string[];
   try {
-    files = walkDir(artDir).sort(); // sort for deterministic ordering
+    files = walkDir(artDir, extensions).sort(); // sort for deterministic ordering
   } catch {
     return { index, findings };
   }
 
   for (const filePath of files) {
+    // Apply ignore_paths filter
+    const relPath = relative(resolvedRoot, filePath);
+    if (ignorePaths.some((pattern) => minimatch(relPath, pattern))) {
+      continue;
+    }
+
     // Parse YAML/JSON
     let parsed: Record<string, unknown>;
     try {

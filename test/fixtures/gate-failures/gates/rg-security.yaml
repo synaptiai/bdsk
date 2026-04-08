@@ -1,0 +1,31 @@
+kind: review_gate
+schema_version: "0.3"
+id: RG-security-001
+title: Security gate (will fail)
+status: approved
+owners:
+  - bob
+created_at: "2026-01-01T00:00:00Z"
+updated_at: "2026-01-01T00:00:00Z"
+trace:
+  upstream:
+    - target_id: BS-checkout-001
+      edge: depends_on
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: bob
+    approved_at: "2026-01-01T00:00:00Z"
+metadata:
+  gate_class: blocking
+  subject: security
+spec:
+  description: Security check that will fail
+  applies_when:
+    - "Any code change"
+  evaluation_method: static_check
+  pass_condition:
+    - "Zero vulnerabilities"
+  fail_action: block
+  evidence_required:
+    - "Security scan report"

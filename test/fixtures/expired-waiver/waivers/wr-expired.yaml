@@ -1,0 +1,30 @@
+kind: waiver_record
+schema_version: "0.3"
+id: WR-expired-001
+title: Expired performance waiver
+status: approved
+owners:
+  - charlie
+created_at: "2024-01-01T00:00:00Z"
+updated_at: "2024-01-01T00:00:00Z"
+trace:
+  upstream:
+    - target_id: RG-perf-001
+      edge: waives
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: charlie
+    approved_at: "2024-01-01T00:00:00Z"
+metadata:
+  waiver_scope: time_bounded
+spec:
+  waived_target: RG-perf-001
+  justification: Temporary performance regression during migration
+  authority: technical_authority
+  valid_from: "2024-01-01T00:00:00Z"
+  valid_until: "2024-06-01T00:00:00Z"
+  compensating_controls:
+    - "Monitor p99 latency daily"
+  residual_risks:
+    - "Users may experience slower response times"

@@ -55,7 +55,10 @@ export async function validate(options: ValidateOptions): Promise<ConformanceRep
   const allFindings: Finding[] = [];
 
   // V1: Discovery — always collect findings (V1 is infrastructure, not optional)
-  const { index, findings: v1Findings } = discoverArtifacts(repoRoot, artifactsDir);
+  const { index, findings: v1Findings } = discoverArtifacts(repoRoot, artifactsDir, {
+    fileExtensions: config.file_extensions,
+    ignorePaths: config.ignore_paths,
+  });
   allFindings.push(...v1Findings);
 
   // V2: Schema validation

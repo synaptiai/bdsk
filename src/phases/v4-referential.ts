@@ -266,18 +266,16 @@ function ri10_executionCompletionIntegrity(index: ArtifactIndex, findings: Findi
   for (const log of index.allOfKind("execution_log")) {
     if (index.schemaInvalid.has(log.id)) continue;
     if (log.spec.final_state !== "completed") continue;
-    const triggered = log.spec.stop_conditions_triggered as Array<Record<string, unknown>> | undefined;
+    const triggered = log.spec.stop_conditions_triggered as string[] | undefined;
     if (!triggered || triggered.length === 0) continue;
 
     for (const condition of triggered) {
-      if (condition.handled === true) continue;
-      // Check for escalation, rejection, or waiver
       findings.push({
         code: "BDSK-EXEC-003",
         severity: "error",
         category: "execution",
         artifact_id: log.id,
-        message: `Stop condition '${condition.condition ?? "unknown"}' triggered without valid escalation/abort/waiver`,
+        message: `Stop condition '${condition}' triggered without valid escalation/abort/waiver`,
         details: { condition },
       });
     }

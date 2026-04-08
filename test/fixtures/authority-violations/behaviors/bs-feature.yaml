@@ -1,0 +1,34 @@
+kind: behavior_spec
+schema_version: "0.3"
+id: BS-feature-001
+title: Feature with wrong authority
+status: approved
+owners:
+  - alice
+created_at: "2026-01-01T00:00:00Z"
+updated_at: "2026-01-01T00:00:00Z"
+trace:
+  upstream: []
+  downstream: []
+approvals:
+  - authority_role: observer
+    approver: intern
+    approved_at: "2026-01-01T00:00:00Z"
+metadata:
+  tags: []
+spec:
+  actor: User
+  goal: Test authority
+  preconditions: []
+  trigger:
+    type: request
+    action: GET /test
+  examples:
+    - id: EX-01
+      given: ["Setup"]
+      when: ["Action"]
+      then: ["Result"]
+  observable_outcomes: ["Outcome"]
+  linked_assumptions: []
+  linked_contracts: []
+  non_goals: ["Nothing"]

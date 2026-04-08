@@ -88,6 +88,78 @@ describe("Full pipeline integration", () => {
     }
   });
 
+  // --- V5: Authority validation ---
+
+  test("authority violations produce BDSK-AUTH-001", async () => {
+    const report = await validate({
+      repositoryPath: join(FIXTURES, "authority-violations"),
+      artifactsDir: ".",
+      schemasDir: SCHEMAS,
+    });
+
+    const authErrors = report.findings.filter((f) => f.code === "BDSK-AUTH-001");
+    expect(authErrors.length).toBeGreaterThanOrEqual(1);
+    // 'observer' role should not satisfy behavior_spec approval
+    expect(authErrors[0].message).toContain("authority role");
+  });
+
+  // --- V6: Execution conformance ---
+
+  test("blocking gate failure produces BDSK-GATE-001", async () => {
+    const report = await validate({
+      repositoryPath: join(FIXTURES, "gate-failures"),
+      artifactsDir: ".",
+      schemasDir: SCHEMAS,
+    });
+
+    const gateErrors = report.findings.filter((f) => f.code === "BDSK-GATE-001");
+    expect(gateErrors.length).toBeGreaterThanOrEqual(1);
+    expect(gateErrors[0].severity).toBe("error");
+    expect(gateErrors[0].message).toContain("RG-security-001");
+  });
+
+  test("stop condition breach produces BDSK-EXEC-003", async () => {
+    const report = await validate({
+      repositoryPath: join(FIXTURES, "stop-condition-breach"),
+      artifactsDir: ".",
+      schemasDir: SCHEMAS,
+    });
+
+    const stopErrors = report.findings.filter((f) => f.code === "BDSK-EXEC-003");
+    expect(stopErrors.length).toBeGreaterThanOrEqual(1);
+    expect(stopErrors[0].message).toContain("token_limit_exceeded");
+  });
+
+  // --- V7: Verification coverage ---
+
+  test("expired waiver produces BDSK-WAIVER-002", async () => {
+    const report = await validate({
+      repositoryPath: join(FIXTURES, "expired-waiver"),
+      artifactsDir: ".",
+      schemasDir: SCHEMAS,
+    });
+
+    const waiverWarnings = report.findings.filter((f) => f.code === "BDSK-WAIVER-002");
+    expect(waiverWarnings.length).toBeGreaterThanOrEqual(1);
+    expect(waiverWarnings[0].severity).toBe("warning");
+  });
+
+  // --- V8: Acceptance validation ---
+
+  test("acceptance mismatch produces BDSK-ACC-001", async () => {
+    const report = await validate({
+      repositoryPath: join(FIXTURES, "acceptance-mismatch"),
+      artifactsDir: ".",
+      schemasDir: SCHEMAS,
+    });
+
+    // Acceptance without subject_diffs or evidence
+    const accErrors = report.findings.filter((f) => f.code === "BDSK-ACC-001");
+    expect(accErrors.length).toBeGreaterThanOrEqual(1);
+  });
+
+  // --- Output formats ---
+
   test("YAML and JSON output formats produce valid output", async () => {
     const { formatYaml } = await import("../../src/output/yaml-reporter.js");
     const { formatJson } = await import("../../src/output/json-reporter.js");

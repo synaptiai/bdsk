@@ -1,17 +1,27 @@
 #!/bin/bash
 # BDSK scope enforcement hook (PreToolUse on Edit|Write)
 # Reads active execution plans and blocks edits to out-of-scope files.
-# CRITICAL: On ANY error, default to ALLOW (exit 0). Never block development
-# due to a hook malfunction.
+#
+# Error policy:
+# - No active plans / empty directory → ALLOW (nothing to enforce)
+# - Can't parse hook input JSON     → ALLOW (pre-infrastructure, not a plan error)
+# - Active plan exists but check errors (Python crash, YAML parse failure,
+#   missing artifact, etc.) → BLOCK with warning. If the infrastructure is
+#   present but broken, failing open would silently disable all scope enforcement.
 
 set -o pipefail
-trap 'exit 0' ERR
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 ACTIVE_DIR="$REPO_ROOT/.claude/state/active-executions"
 
-# If no active executions directory or it's empty, allow everything
+# Phase 1: No infrastructure → fail-open (nothing to enforce)
 if [ ! -d "$ACTIVE_DIR" ] || [ -z "$(ls -A "$ACTIVE_DIR" 2>/dev/null)" ]; then
+  exit 0
+fi
+
+# Verify python3 and yaml are available before proceeding
+if ! python3 -c "import yaml" 2>/dev/null; then
+  echo "BDSK WARNING: python3 or PyYAML not available. Scope enforcement disabled." >&2
   exit 0
 fi
 
@@ -27,27 +37,28 @@ except:
     print('')
 " 2>/dev/null)
 
-# If we couldn't parse the file path, allow (don't block on parse errors)
+# Can't parse input → fail-open (pre-infrastructure issue, not a plan error)
 if [ -z "$FILE_PATH" ]; then
   exit 0
 fi
 
-# Check each active execution plan
-# Semantics: if ANY plan blocks, the edit is blocked (union of restrictions)
+# Phase 2: Active plans exist — errors here should fail-closed
 BLOCKED=""
 BLOCK_REASON=""
+PLAN_CHECKED=false
 
 for plan_file in "$ACTIVE_DIR"/*.yaml; do
   [ -f "$plan_file" ] || continue
 
-  # Use env vars to avoid shell injection into Python source
+  # Read the execution plan ID from the state file
   PLAN_ID=$(BDSK_PLAN_FILE="$plan_file" python3 -c "
 import yaml, sys, os
 try:
     with open(os.environ['BDSK_PLAN_FILE']) as f:
         data = yaml.safe_load(f)
     print(data.get('execution_plan_id', ''))
-except:
+except Exception as e:
+    print('ERROR:' + str(e), file=sys.stderr)
     print('')
 " 2>/dev/null)
 
@@ -66,72 +77,82 @@ try:
             print(f)
             sys.exit(0)
     print('')
-except:
+except Exception as e:
+    print('ERROR:' + str(e), file=sys.stderr)
     print('')
 " 2>/dev/null)
 
-  [ -z "$PLAN_ARTIFACT" ] && continue
+  if [ -z "$PLAN_ARTIFACT" ]; then
+    # Active plan state exists but artifact not found — warn and fail-closed
+    echo "BDSK WARNING: Active execution plan '$PLAN_ID' artifact not found. Blocking edit as precaution." >&2
+    exit 2
+  fi
 
-  # Extract scope and check — pass all values via env vars
+  # Extract scope and check
   SCOPE_CHECK=$(BDSK_PLAN_ARTIFACT="$PLAN_ARTIFACT" BDSK_FILE_PATH="$FILE_PATH" BDSK_REPO_ROOT="$REPO_ROOT" python3 -c "
 import yaml, sys, fnmatch, os
 
-try:
-    with open(os.environ['BDSK_PLAN_ARTIFACT']) as f:
-        plan = yaml.safe_load(f)
+with open(os.environ['BDSK_PLAN_ARTIFACT']) as f:
+    plan = yaml.safe_load(f)
 
-    if plan.get('status') != 'approved':
+if plan.get('status') != 'approved':
+    print('ALLOW')
+    sys.exit(0)
+
+spec = plan.get('spec', {})
+in_scope = spec.get('in_scope_paths', [])
+out_of_scope = spec.get('out_of_scope_paths', [])
+file_path = os.environ['BDSK_FILE_PATH']
+repo_root = os.environ['BDSK_REPO_ROOT']
+
+# Make path relative to repo root if absolute
+if file_path.startswith(repo_root):
+    file_path = os.path.relpath(file_path, repo_root)
+
+# Governance paths are always writable (process artifacts, not implementation)
+governance_prefixes = [
+    'artifacts/verifications/',
+    'artifacts/execution-evals/',
+    'artifacts/acceptance/',
+    'artifacts/execution-logs/',
+    '.claude/state/active-executions/',
+    '.claude/state/change-log.jsonl',
+]
+for prefix in governance_prefixes:
+    if file_path.startswith(prefix) or file_path == prefix.rstrip('/'):
         print('ALLOW')
         sys.exit(0)
 
-    spec = plan.get('spec', {})
-    in_scope = spec.get('in_scope_paths', [])
-    out_of_scope = spec.get('out_of_scope_paths', [])
-    file_path = os.environ['BDSK_FILE_PATH']
-    repo_root = os.environ['BDSK_REPO_ROOT']
-
-    # Make path relative to repo root if absolute
-    if file_path.startswith(repo_root):
-        file_path = os.path.relpath(file_path, repo_root)
-
-    # Governance paths are always writable (process artifacts, not implementation)
-    governance_prefixes = [
-        'artifacts/verifications/',
-        'artifacts/execution-evals/',
-        'artifacts/acceptance/',
-        'artifacts/execution-logs/',
-        '.claude/state/active-executions/',
-        '.claude/state/change-log.jsonl',
-    ]
-    for prefix in governance_prefixes:
-        if file_path.startswith(prefix) or file_path == prefix.rstrip('/'):
-            print('ALLOW')
-            sys.exit(0)
-
-    # Check out_of_scope first (deny takes priority)
-    for pattern in out_of_scope:
-        if fnmatch.fnmatch(file_path, pattern) or file_path.startswith(pattern):
-            print('BLOCK:' + pattern)
-            sys.exit(0)
-
-    # Check in_scope
-    if in_scope:
-        for pattern in in_scope:
-            if fnmatch.fnmatch(file_path, pattern) or file_path.startswith(pattern):
-                print('ALLOW')
-                sys.exit(0)
-        print('BLOCK:not_in_scope')
+# Check out_of_scope first (deny takes priority)
+for pattern in out_of_scope:
+    if fnmatch.fnmatch(file_path, pattern) or file_path.startswith(pattern):
+        print('BLOCK:' + pattern)
         sys.exit(0)
 
-    print('ALLOW')
-except Exception as e:
-    print('ALLOW')
+# Check in_scope
+if in_scope:
+    for pattern in in_scope:
+        if fnmatch.fnmatch(file_path, pattern) or file_path.startswith(pattern):
+            print('ALLOW')
+            sys.exit(0)
+    print('BLOCK:not_in_scope')
+    sys.exit(0)
+
+print('ALLOW')
 " 2>/dev/null)
+
+  # If Python exited non-zero (scope check itself crashed), fail-closed
+  if [ $? -ne 0 ] || [ -z "$SCOPE_CHECK" ]; then
+    echo "BDSK WARNING: Scope check failed for plan '$PLAN_ID'. Blocking edit as precaution." >&2
+    exit 2
+  fi
+
+  PLAN_CHECKED=true
 
   if [[ "$SCOPE_CHECK" == BLOCK:* ]]; then
     BLOCKED="true"
     BLOCK_REASON="${SCOPE_CHECK#BLOCK:}"
-    break  # Any plan that blocks is sufficient to deny
+    break
   fi
 done
 

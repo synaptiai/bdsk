@@ -93,17 +93,22 @@ function algorithmB_stopConditions(
 
   for (const log of logs) {
     if (index.schemaInvalid.has(log.id)) continue;
-    const triggered = log.spec.stop_conditions_triggered as Array<Record<string, unknown>> | undefined;
+    const triggered = log.spec.stop_conditions_triggered as string[] | undefined;
     if (!triggered || triggered.length === 0) continue;
 
+    // Per the schema, stop_conditions_triggered is string[].
+    // Any triggered stop condition in a completed log is a breach
+    // unless final_state is "aborted" or "escalated".
+    const finalState = log.spec.final_state as string | undefined;
+    if (finalState === "aborted" || finalState === "escalated") continue;
+
     for (const condition of triggered) {
-      if (condition.handled === true) continue;
       findings.push({
         code: "BDSK-EXEC-003",
         severity: "error",
         category: "execution",
         artifact_id: log.id,
-        message: `Stop condition '${condition.condition ?? "unknown"}' triggered without valid escalation/abort/waiver`,
+        message: `Stop condition '${condition}' triggered without valid escalation/abort/waiver`,
         details: { condition, execution_plan: epId },
       });
     }

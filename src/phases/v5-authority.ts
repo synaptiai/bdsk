@@ -105,10 +105,11 @@ function au3_waiverAuthority(
     if (index.schemaInvalid.has(waiver.id)) continue;
     if (waiver.status !== "approved") continue;
 
-    const authority = waiver.spec.authority as Record<string, unknown> | undefined;
-    if (!authority) continue;
+    // Schema: spec.authority is a string (the role name)
+    const authorityStr = waiver.spec.authority as string | undefined;
+    if (!authorityStr) continue;
 
-    const role = authority.role as string;
+    const role = authorityStr;
     const targetId = waiver.spec.waived_target as string | undefined;
     if (!targetId) continue;
 
@@ -117,8 +118,8 @@ function au3_waiverAuthority(
 
     const gateMeta = target.metadata as Record<string, unknown>;
     const tags = gateMeta.tags as string[] | undefined;
-    const isSecurity = tags?.includes("security");
-    const isBlocking = (target.spec as Record<string, unknown>).class === "blocking";
+    const isSecurity = tags?.includes("security") || gateMeta.subject === "security";
+    const isBlocking = gateMeta.gate_class === "blocking";
 
     let action: AuthorityAction;
     if (isBlocking && isSecurity) {

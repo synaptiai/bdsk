@@ -1,0 +1,35 @@
+kind: execution_plan
+schema_version: "0.3"
+id: EP-feature-001
+title: Feature implementation
+status: approved
+owners:
+  - alice
+created_at: "2026-01-01T00:00:00Z"
+updated_at: "2026-01-01T00:00:00Z"
+trace:
+  upstream:
+    - target_id: BS-feature-001
+      edge: depends_on
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: bob
+    approved_at: "2026-01-01T00:00:00Z"
+metadata:
+  change_type: new_feature
+spec:
+  objective: Implement feature
+  in_scope_paths: ["src/**"]
+  out_of_scope_paths: []
+  allowed_operations: [create_files]
+  forbidden_operations: []
+  required_inputs:
+    behaviors: [BS-feature-001]
+    assumptions: []
+    contracts: []
+    policies: []
+    review_gates: []
+  required_outputs: [generated_diff]
+  escalation_conditions: []
+  completion_criteria: []

@@ -1,0 +1,29 @@
+kind: review_gate
+schema_version: "0.3"
+id: RG-perf-001
+title: Performance gate
+status: approved
+owners:
+  - bob
+created_at: "2026-01-01T00:00:00Z"
+updated_at: "2026-01-01T00:00:00Z"
+trace:
+  upstream: []
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: bob
+    approved_at: "2026-01-01T00:00:00Z"
+metadata:
+  gate_class: warning
+  subject: other
+spec:
+  description: Performance check
+  applies_when:
+    - "Any code change"
+  evaluation_method: static_check
+  pass_condition:
+    - "Response time under 200ms"
+  fail_action: warn
+  evidence_required:
+    - "Performance report"

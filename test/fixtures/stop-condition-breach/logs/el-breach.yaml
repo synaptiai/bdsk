@@ -1,0 +1,28 @@
+kind: execution_log
+schema_version: "0.3"
+id: EL-breach-001
+title: Execution log with unhandled stop condition
+status: completed
+owners:
+  - alice
+created_at: "2026-01-03T00:00:00Z"
+updated_at: "2026-01-04T00:00:00Z"
+trace:
+  upstream:
+    - target_id: EP-feature-001
+      edge: depends_on
+  downstream: []
+approvals: []
+metadata:
+  executor_type: ai_agent
+spec:
+  consulted_artifacts:
+    - BS-feature-001
+  steps:
+    - "Started implementation"
+    - "Hit token limit"
+  emitted_outputs: []
+  surfaced_uncertainties: []
+  stop_conditions_triggered:
+    - "token_limit_exceeded"
+  final_state: completed

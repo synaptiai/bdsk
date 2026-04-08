@@ -1,0 +1,27 @@
+kind: execution_eval
+schema_version: "0.3"
+id: EE-security-fail-001
+title: Security gate evaluation (FAIL)
+status: completed
+owners:
+  - bob
+created_at: "2026-01-04T00:00:00Z"
+updated_at: "2026-01-04T00:00:00Z"
+trace:
+  upstream:
+    - target_id: EP-checkout-001
+      edge: depends_on
+    - target_id: RG-security-001
+      edge: depends_on
+  downstream: []
+approvals: []
+metadata:
+  eval_type: gate_check
+spec:
+  subject_diff: GD-pending
+  subject_gate: RG-security-001
+  result: fail
+  findings:
+    - "SQL injection vulnerability in checkout handler"
+  evidence:
+    - "security-scan-report.pdf"
