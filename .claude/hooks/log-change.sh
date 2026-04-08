@@ -31,8 +31,15 @@ if [[ "$FILE_PATH" == "$REPO_ROOT"* ]]; then
   FILE_PATH="${FILE_PATH#$REPO_ROOT/}"
 fi
 
-# Append to change log
+# Append to change log with proper JSON escaping
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-echo "{\"file\":\"$FILE_PATH\",\"timestamp\":\"$TIMESTAMP\",\"action\":\"edit\"}" >> "$LOG_DIR/change-log.jsonl" 2>/dev/null
+BDSK_FILE="$FILE_PATH" BDSK_TS="$TIMESTAMP" python3 -c "
+import json, os, sys
+try:
+    entry = json.dumps({'file': os.environ['BDSK_FILE'], 'timestamp': os.environ['BDSK_TS'], 'action': 'edit'})
+    print(entry)
+except:
+    pass
+" >> "$LOG_DIR/change-log.jsonl" 2>/dev/null
 
 exit 0

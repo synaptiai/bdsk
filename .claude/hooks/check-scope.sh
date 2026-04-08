@@ -21,7 +21,6 @@ FILE_PATH=$(echo "$INPUT" | python3 -c "
 import sys, json
 try:
     data = json.load(sys.stdin)
-    # Handle both Edit and Write tool inputs
     fp = data.get('tool_input', {}).get('file_path', '')
     print(fp)
 except:
@@ -34,13 +33,18 @@ if [ -z "$FILE_PATH" ]; then
 fi
 
 # Check each active execution plan
+# Semantics: if ANY plan blocks, the edit is blocked (union of restrictions)
+BLOCKED=""
+BLOCK_REASON=""
+
 for plan_file in "$ACTIVE_DIR"/*.yaml; do
   [ -f "$plan_file" ] || continue
 
-  PLAN_ID=$(python3 -c "
-import yaml, sys
+  # Use env vars to avoid shell injection into Python source
+  PLAN_ID=$(BDSK_PLAN_FILE="$plan_file" python3 -c "
+import yaml, sys, os
 try:
-    with open('$plan_file') as f:
+    with open(os.environ['BDSK_PLAN_FILE']) as f:
         data = yaml.safe_load(f)
     print(data.get('execution_plan_id', ''))
 except:
@@ -49,16 +53,31 @@ except:
 
   [ -z "$PLAN_ID" ] && continue
 
-  # Find the actual execution plan artifact
-  PLAN_ARTIFACT=$(find "$REPO_ROOT/artifacts/execution-plans" -name "*.yaml" -exec grep -l "id: $PLAN_ID" {} \; 2>/dev/null | head -1)
+  # Find the actual execution plan artifact using YAML-aware lookup
+  PLAN_ARTIFACT=$(BDSK_PLAN_ID="$PLAN_ID" BDSK_SEARCH_DIR="$REPO_ROOT/artifacts/execution-plans" python3 -c "
+import yaml, sys, os, glob
+try:
+    search_dir = os.environ['BDSK_SEARCH_DIR']
+    target_id = os.environ['BDSK_PLAN_ID']
+    for f in sorted(glob.glob(os.path.join(search_dir, '*.yaml'))):
+        with open(f) as fh:
+            doc = yaml.safe_load(fh)
+        if doc and doc.get('id') == target_id:
+            print(f)
+            sys.exit(0)
+    print('')
+except:
+    print('')
+" 2>/dev/null)
+
   [ -z "$PLAN_ARTIFACT" ] && continue
 
-  # Extract scope paths
-  SCOPE_CHECK=$(python3 -c "
+  # Extract scope and check — pass all values via env vars
+  SCOPE_CHECK=$(BDSK_PLAN_ARTIFACT="$PLAN_ARTIFACT" BDSK_FILE_PATH="$FILE_PATH" BDSK_REPO_ROOT="$REPO_ROOT" python3 -c "
 import yaml, sys, fnmatch, os
 
 try:
-    with open('$PLAN_ARTIFACT') as f:
+    with open(os.environ['BDSK_PLAN_ARTIFACT']) as f:
         plan = yaml.safe_load(f)
 
     if plan.get('status') != 'approved':
@@ -68,25 +87,24 @@ try:
     spec = plan.get('spec', {})
     in_scope = spec.get('in_scope_paths', [])
     out_of_scope = spec.get('out_of_scope_paths', [])
-    file_path = '$FILE_PATH'
+    file_path = os.environ['BDSK_FILE_PATH']
+    repo_root = os.environ['BDSK_REPO_ROOT']
 
     # Make path relative to repo root if absolute
-    repo_root = '$REPO_ROOT'
     if file_path.startswith(repo_root):
         file_path = os.path.relpath(file_path, repo_root)
 
     # Governance paths are always writable (process artifacts, not implementation)
-    # These are where the lifecycle records its own decisions — verification results,
-    # gate evaluations, acceptance decisions, execution logs, and state tracking.
     governance_prefixes = [
         'artifacts/verifications/',
         'artifacts/execution-evals/',
         'artifacts/acceptance/',
         'artifacts/execution-logs/',
-        '.claude/state/',
+        '.claude/state/active-executions/',
+        '.claude/state/change-log.jsonl',
     ]
     for prefix in governance_prefixes:
-        if file_path.startswith(prefix):
+        if file_path.startswith(prefix) or file_path == prefix.rstrip('/'):
             print('ALLOW')
             sys.exit(0)
 
@@ -102,22 +120,25 @@ try:
             if fnmatch.fnmatch(file_path, pattern) or file_path.startswith(pattern):
                 print('ALLOW')
                 sys.exit(0)
-        # File not in any in_scope pattern
         print('BLOCK:not_in_scope')
         sys.exit(0)
 
-    # No scope defined, allow
     print('ALLOW')
 except Exception as e:
     print('ALLOW')
 " 2>/dev/null)
 
   if [[ "$SCOPE_CHECK" == BLOCK:* ]]; then
-    REASON="${SCOPE_CHECK#BLOCK:}"
-    echo "BDSK: Edit blocked. File is outside execution scope ($REASON). Update the execution plan to include this path." >&2
-    exit 2
+    BLOCKED="true"
+    BLOCK_REASON="${SCOPE_CHECK#BLOCK:}"
+    break  # Any plan that blocks is sufficient to deny
   fi
 done
+
+if [ -n "$BLOCKED" ]; then
+  echo "BDSK: Edit blocked. File is outside execution scope ($BLOCK_REASON). Update the execution plan to include this path." >&2
+  exit 2
+fi
 
 # Default: allow
 exit 0

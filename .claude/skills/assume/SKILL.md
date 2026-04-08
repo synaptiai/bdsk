@@ -57,7 +57,7 @@ spec:
 
 4. **Write to disk.** Save to `artifacts/assumptions/<id>.yaml`
 
-5. **Present for review.** The user changes status from `proposed` to `accepted` to approve.
+5. **Present for review.** The user runs `/approve <id>` to accept the assumption.
 
 ## Rules
 

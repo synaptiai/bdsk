@@ -54,11 +54,9 @@ export async function validate(options: ValidateOptions): Promise<ConformanceRep
 
   const allFindings: Finding[] = [];
 
-  // V1: Discovery
+  // V1: Discovery — always collect findings (V1 is infrastructure, not optional)
   const { index, findings: v1Findings } = discoverArtifacts(repoRoot, artifactsDir);
-  if (phases.has("v1")) {
-    allFindings.push(...v1Findings);
-  }
+  allFindings.push(...v1Findings);
 
   // V2: Schema validation
   if (phases.has("v2")) {
@@ -128,13 +126,21 @@ export async function validate(options: ValidateOptions): Promise<ConformanceRep
   }
 
   // Build report
-  const errors = allFindings.filter((f) => f.severity === "error");
-  const warnings = allFindings.filter((f) => f.severity === "warning");
-  const schemaFailures = allFindings.filter((f) => f.category === "schema" && f.severity === "error");
+  // Apply strict mode: promote warnings to errors
+  const finalFindings = options.strict
+    ? allFindings.map((f) => f.severity === "warning" ? { ...f, severity: "error" as const } : f)
+    : allFindings;
 
-  const executionResults = index.allOfKind("execution_plan").map((ep) => {
-    return computeExecutionResult(index, ep.id, allFindings);
-  });
+  const errors = finalFindings.filter((f) => f.severity === "error");
+  const warnings = finalFindings.filter((f) => f.severity === "warning");
+  const schemaFailures = finalFindings.filter((f) => f.category === "schema" && f.severity === "error");
+
+  const executionPlans = index.allOfKind("execution_plan")
+    .filter((ep) => !options.executionFilter || options.executionFilter.includes(ep.id));
+
+  const executionResults = executionPlans.map((ep) =>
+    computeExecutionResult(index, ep.id, allFindings),
+  );
 
   const report: ConformanceReport = {
     validator_version: VALIDATOR_VERSION,
@@ -152,12 +158,10 @@ export async function validate(options: ValidateOptions): Promise<ConformanceRep
       status: a.status,
     })),
     execution_results: executionResults.map((er, i) => ({
-      execution_plan_id: index.allOfKind("execution_plan")[i].id,
+      execution_plan_id: executionPlans[i].id,
       ...er,
     })),
-    findings: options.strict
-      ? allFindings.map((f) => f.severity === "warning" ? { ...f, severity: "error" as const } : f)
-      : allFindings,
+    findings: finalFindings,
   };
 
   return report;

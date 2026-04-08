@@ -96,16 +96,17 @@ function computeOutcome(
     }
   }
 
-  // Collect blocking and warning findings for related artifacts
+  // Collect blocking and warning findings for related artifacts only
+  // Exclude global findings (artifact_id === null) to avoid unrelated errors
+  // causing all acceptance decisions to be rejected
   const relatedIds = new Set([...subjectDiffs, ...relatedEpIds]);
-  // Also include findings with null artifact_id (global) or related to EPs
   const blockingFindings = priorFindings.filter(
     (f) => f.severity === "error" && BLOCKING_CODES.has(f.code) &&
-      (f.artifact_id === null || relatedIds.has(f.artifact_id!)),
+      f.artifact_id !== null && relatedIds.has(f.artifact_id),
   );
   const warningFindings = priorFindings.filter(
     (f) => f.severity === "warning" &&
-      (f.artifact_id === null || relatedIds.has(f.artifact_id!)),
+      f.artifact_id !== null && relatedIds.has(f.artifact_id),
   );
 
   let outcome: ExecutionOutcome;

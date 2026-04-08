@@ -137,7 +137,7 @@ function algorithmC_gateEvaluation(
     const gate = index.get(gateId);
     if (!gate) continue; // Algorithm A already catches missing gates
 
-    const gateClass = (gate.spec as Record<string, unknown>).class as string | undefined;
+    const gateClass = (gate.metadata as Record<string, unknown>).gate_class as string | undefined;
 
     // Find execution_eval for this gate
     const evals = index.allOfKind("execution_eval").filter((ee) => {

@@ -34,6 +34,21 @@ export function discoverArtifacts(
   const findings: Finding[] = [];
 
   const artDir = resolve(repoRoot, artifactsDir);
+
+  // Path traversal protection: ensure artifact dir is within repo root
+  const resolvedRoot = resolve(repoRoot);
+  if (!artDir.startsWith(resolvedRoot)) {
+    findings.push({
+      code: "BDSK-SCHEMA-002",
+      severity: "error",
+      category: "schema",
+      artifact_id: null,
+      message: `Artifact directory '${artifactsDir}' resolves outside repository root`,
+      details: { artifacts_dir: artifactsDir, resolved: artDir, repo_root: resolvedRoot },
+    });
+    return { index, findings };
+  }
+
   let files: string[];
   try {
     files = walkDir(artDir).sort(); // sort for deterministic ordering

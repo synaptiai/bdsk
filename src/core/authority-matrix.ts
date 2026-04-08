@@ -50,15 +50,12 @@ export function mergeAuthorityConfig(
   custom: Partial<Record<string, string[]>>,
 ): { config: AuthorityConfig; violations: string[] } {
   const violations: string[] = [];
-  const merged = { ...DEFAULT_MATRIX } as Record<string, string[]>;
 
+  // Pass 1: validate all entries for weakness
   for (const [action, customRoles] of Object.entries(custom)) {
     if (action === "custom_roles" || !customRoles) continue;
     const defaultRoles = DEFAULT_MATRIX[action as AuthorityAction];
-    if (!defaultRoles) {
-      merged[action] = customRoles;
-      continue;
-    }
+    if (!defaultRoles) continue;
     for (const req of defaultRoles) {
       if (!customRoles.includes(req)) {
         violations.push(
@@ -66,7 +63,13 @@ export function mergeAuthorityConfig(
         );
       }
     }
-    if (violations.length === 0) {
+  }
+
+  // Pass 2: only merge if no violations found
+  const merged = { ...DEFAULT_MATRIX } as Record<string, string[]>;
+  if (violations.length === 0) {
+    for (const [action, customRoles] of Object.entries(custom)) {
+      if (action === "custom_roles" || !customRoles) continue;
       merged[action] = customRoles;
     }
   }

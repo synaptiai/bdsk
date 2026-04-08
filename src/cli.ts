@@ -106,6 +106,11 @@ async function main() {
       strict: args.strict,
     });
 
+    if (!["text", "yaml", "json"].includes(args.format)) {
+      console.error(`Unknown format '${args.format}'. Valid formats: text, yaml, json`);
+      process.exit(2);
+    }
+
     let formatted: string;
     switch (args.format) {
       case "yaml":

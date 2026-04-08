@@ -249,7 +249,7 @@ function ri9_supersessionConsistency(index: ArtifactIndex, findings: Finding[]):
       if (!target) continue; // RI-1 catches this
       if (target.status !== "superseded" && target.status !== "archived") {
         findings.push({
-          code: "BDSK-REF-001",
+          code: "BDSK-REF-006",
           severity: "warning",
           category: "reference",
           artifact_id: artifact.id,

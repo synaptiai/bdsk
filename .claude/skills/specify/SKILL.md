@@ -73,7 +73,7 @@ spec:
 
 5. **Write to disk.** Save to `artifacts/behaviors/<id>.yaml`
 
-6. **Present for review.** Show the artifact to the user. Explain that changing `status: draft` to `status: approved` (and adding an approvals entry) is how they approve it.
+6. **Present for review.** Show the artifact to the user. Explain that running `/approve <id>` is how they approve it.
 
 ## Rules
 
