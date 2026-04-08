@@ -6,6 +6,7 @@ export function formatText(report: ConformanceReport, verbose: boolean = false):
 
   lines.push(`BDSK Validator v${report.validator_version} | Spec v${report.spec_version}`);
   lines.push("");
+  lines.push(`Repository: ${report.repository_path}`);
   lines.push(`Artifacts:  ${report.summary.artifact_count} scanned, ${report.summary.artifact_count - report.summary.schema_failures} valid, ${report.summary.schema_failures} errors`);
   lines.push("");
 

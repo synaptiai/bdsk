@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "fs";
 import { join, resolve, extname, relative } from "path";
-import { parse as parseYaml } from "yaml";
+import { parse as parseYaml, parseAllDocuments } from "yaml";
 import { minimatch } from "../core/minimatch.js";
 import { ArtifactIndex } from "../core/artifact-index.js";
 import { ARTIFACT_KINDS, type ArtifactKind, type ParsedArtifact, type Trace } from "../types/artifact.js";
@@ -89,6 +89,21 @@ export function discoverArtifacts(
     let parsed: Record<string, unknown>;
     try {
       const content = readFileSync(filePath, "utf-8");
+
+      // Reject multi-document YAML (not supported in v1)
+      const docs = parseAllDocuments(content);
+      if (docs.length > 1) {
+        findings.push({
+          code: "BDSK-SCHEMA-002",
+          severity: "error",
+          category: "schema",
+          artifact_id: null,
+          message: `Multi-document YAML not supported: ${filePath} contains ${docs.length} documents`,
+          details: { path: filePath, document_count: docs.length },
+        });
+        continue;
+      }
+
       parsed = parseYaml(content) as Record<string, unknown>;
     } catch (e) {
       findings.push({

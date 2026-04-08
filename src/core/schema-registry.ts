@@ -1,7 +1,8 @@
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import { readFileSync, readdirSync } from "fs";
-import { join, resolve } from "path";
+import { join, resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 import type { ArtifactKind } from "../types/artifact.js";
 
 export class SchemaRegistry {
@@ -64,7 +65,10 @@ export class SchemaRegistry {
 
   /** Get the default bundled schemas directory (relative to repo root). */
   static bundledSchemasDir(): string {
-    // Walk up from src/core/ to repo root, then into schemas/
-    return join(import.meta.dir ?? __dirname, "..", "..", "..", "schemas");
+    // Works in both Bun (import.meta.dir) and Node.js ESM (import.meta.url)
+    const currentDir = typeof import.meta.dir === "string"
+      ? import.meta.dir
+      : dirname(fileURLToPath(import.meta.url));
+    return join(currentDir, "..", "..", "..", "schemas");
   }
 }

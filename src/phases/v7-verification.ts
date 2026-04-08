@@ -1,4 +1,5 @@
 import { ArtifactIndex } from "../core/artifact-index.js";
+import { asExecutionPlanSpec } from "../types/artifact.js";
 import type { Finding } from "../types/findings.js";
 
 export function validateVerificationCoverage(index: ArtifactIndex): Finding[] {
@@ -22,9 +23,9 @@ function behaviorCoverage(
   epId: string,
   findings: Finding[],
 ): void {
-  const ep = index.get(epId)!;
-  const inputs = ep.spec.required_inputs as Record<string, unknown> | undefined;
-  const behaviors = inputs?.behaviors as string[] | undefined;
+  const ep = index.get(epId);
+  if (!ep) return;
+  const behaviors = asExecutionPlanSpec(ep).required_inputs?.behaviors;
   if (!behaviors) return;
 
   for (const bsId of behaviors) {
@@ -43,7 +44,7 @@ function behaviorCoverage(
     } else {
       // Check if any have a fail result
       for (const v of provers) {
-        const result = (v.spec as Record<string, unknown>).execution_result as string | undefined;
+        const result = v.spec.execution_result as string | undefined;
         if (result === "fail") {
           findings.push({
             code: "BDSK-VER-003",
@@ -65,7 +66,8 @@ function contractCoverage(
   epId: string,
   findings: Finding[],
 ): void {
-  const ep = index.get(epId)!;
+  const ep = index.get(epId);
+  if (!ep) return;
   // Contracts referenced via depends_on in upstream
   const contractRefs = ep.trace.upstream
     .filter((r) => r.edge === "depends_on")

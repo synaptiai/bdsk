@@ -125,5 +125,8 @@ This enables `/run --from <phase>` to resume from where it left off.
 - Downstream phases (evaluate, verify, validate, accept) proceed automatically on success
 - Any failure escalates to the user with a clear explanation of what failed and why
 - Never skip the validate phase — it catches issues that individual skills miss
-- If the user says "Cancel" at any gate, stop immediately and clean up state
+- If the user says "Cancel" at any gate, stop immediately and clean up:
+  - Remove the active execution entry from `.claude/state/active-executions/`
+  - Leave generated artifacts as `draft` (they can be reused in a future /run)
+  - Log the cancellation reason in the change log
 - The /run skill is a thin orchestrator — it calls existing skill logic, not new logic

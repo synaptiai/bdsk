@@ -1,4 +1,5 @@
 import { ArtifactIndex } from "../core/artifact-index.js";
+import { asAcceptanceDecisionSpec } from "../types/artifact.js";
 import type { Finding } from "../types/findings.js";
 import type { ExecutionOutcome } from "../types/report.js";
 
@@ -19,7 +20,7 @@ export function validateAcceptance(
   for (const ad of index.allOfKind("acceptance_decision")) {
     if (index.schemaInvalid.has(ad.id)) continue;
 
-    const recordedOutcome = (ad.metadata as Record<string, unknown>).outcome as string | undefined;
+    const recordedOutcome = ad.metadata.outcome as string | undefined;
     const computed = computeOutcome(index, ad.id, priorFindings);
 
     if (recordedOutcome && recordedOutcome !== computed.outcome) {
@@ -52,7 +53,7 @@ export function validateAcceptance(
     }
 
     if (computed.outcome === "conditionally_accepted") {
-      const conditions = ad.spec.conditions as string[] | undefined;
+      const conditions = asAcceptanceDecisionSpec(ad).conditions;
       if (!conditions || conditions.length === 0) {
         findings.push({
           code: "BDSK-ACC-003",
@@ -81,8 +82,9 @@ function computeOutcome(
   priorFindings: Finding[],
 ): ComputedOutcome {
   // Collect all findings that are relevant to the artifacts this acceptance covers
-  const ad = index.get(adId)!;
-  const subjectDiffs = ad.spec.subject_diffs as string[] | undefined ?? [];
+  const ad = index.get(adId);
+  if (!ad) return { outcome: "indeterminate", blockingFindings: [], warningFindings: [] };
+  const subjectDiffs = asAcceptanceDecisionSpec(ad).subject_diffs ?? [];
 
   // Find the execution plan(s) related to these diffs
   const relatedEpIds = new Set<string>();

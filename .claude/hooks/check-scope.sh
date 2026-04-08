@@ -139,11 +139,12 @@ if in_scope:
     sys.exit(0)
 
 print('ALLOW')
-" 2>/dev/null)
+")
 
+  SCOPE_EXIT=$?
   # If Python exited non-zero (scope check itself crashed), fail-closed
-  if [ $? -ne 0 ] || [ -z "$SCOPE_CHECK" ]; then
-    echo "BDSK WARNING: Scope check failed for plan '$PLAN_ID'. Blocking edit as precaution." >&2
+  if [ $SCOPE_EXIT -ne 0 ] || [ -z "$SCOPE_CHECK" ]; then
+    echo "BDSK WARNING: Scope check failed for plan '$PLAN_ID' (exit=$SCOPE_EXIT). Blocking edit as precaution." >&2
     exit 2
   fi
 

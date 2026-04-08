@@ -62,3 +62,79 @@ export interface ParsedArtifact {
   source_path: string;
   raw: Record<string, unknown>;
 }
+
+// --- Typed accessors for known artifact spec shapes ---
+
+export interface ExecutionPlanSpec {
+  objective?: string;
+  in_scope_paths?: string[];
+  out_of_scope_paths?: string[];
+  allowed_operations?: string[];
+  forbidden_operations?: string[];
+  required_inputs?: {
+    behaviors?: string[];
+    assumptions?: string[];
+    contracts?: string[];
+    policies?: string[];
+    review_gates?: string[];
+  };
+  required_outputs?: string[];
+  escalation_conditions?: string[];
+  completion_criteria?: string[];
+}
+
+export interface ReviewGateMetadata {
+  gate_class?: "blocking" | "warning" | "manual-review" | "escalation";
+  subject?: "scope" | "dependencies" | "contracts" | "tests" | "security" | "architecture" | "other";
+}
+
+export interface ExecutionEvalSpec {
+  subject_diff?: string;
+  subject_gate?: string;
+  result?: "pass" | "warn" | "fail" | "escalate";
+  findings?: string[];
+  evidence?: string[];
+}
+
+export interface ExecutionLogSpec {
+  consulted_artifacts?: string[];
+  steps?: string[];
+  emitted_outputs?: string[];
+  surfaced_uncertainties?: string[];
+  stop_conditions_triggered?: string[];
+  final_state?: "completed" | "aborted" | "escalated";
+}
+
+export interface AcceptanceDecisionSpec {
+  subject_diffs?: string[];
+  decision_summary?: string;
+  reasons?: string[];
+  conditions?: string[];
+  residual_risks?: string[];
+  approvers?: string[];
+}
+
+/** Type-safe accessor for execution plan spec fields. */
+export function asExecutionPlanSpec(artifact: ParsedArtifact): ExecutionPlanSpec {
+  return artifact.spec as ExecutionPlanSpec;
+}
+
+/** Type-safe accessor for review gate metadata. */
+export function asReviewGateMetadata(artifact: ParsedArtifact): ReviewGateMetadata {
+  return artifact.metadata as ReviewGateMetadata;
+}
+
+/** Type-safe accessor for execution eval spec. */
+export function asExecutionEvalSpec(artifact: ParsedArtifact): ExecutionEvalSpec {
+  return artifact.spec as ExecutionEvalSpec;
+}
+
+/** Type-safe accessor for execution log spec. */
+export function asExecutionLogSpec(artifact: ParsedArtifact): ExecutionLogSpec {
+  return artifact.spec as ExecutionLogSpec;
+}
+
+/** Type-safe accessor for acceptance decision spec. */
+export function asAcceptanceDecisionSpec(artifact: ParsedArtifact): AcceptanceDecisionSpec {
+  return artifact.spec as AcceptanceDecisionSpec;
+}

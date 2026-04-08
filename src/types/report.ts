@@ -12,6 +12,7 @@ export type ExecutionOutcome =
 export interface ConformanceReport {
   validator_version: string;
   spec_version: string;
+  repository_path: string;
   repository_outcome: RepositoryOutcome;
   summary: {
     artifact_count: number;

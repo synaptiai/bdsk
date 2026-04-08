@@ -1,4 +1,5 @@
 import { ArtifactIndex } from "../core/artifact-index.js";
+import { asReviewGateMetadata, asAcceptanceDecisionSpec } from "../types/artifact.js";
 import {
   type AuthorityAction,
   type AuthorityConfig,
@@ -44,8 +45,8 @@ function au1_approvalAuthority(
     // For assumption_records, determine area-specific action
     let effectiveAction = action;
     if (artifact.kind === "review_gate") {
-      const tags = (artifact.metadata as Record<string, unknown>).tags as string[] | undefined;
-      if (tags?.includes("security")) {
+      const gateMeta = asReviewGateMetadata(artifact);
+      if (gateMeta.subject === "security") {
         effectiveAction = "review_gate_approval_security";
       }
     }
@@ -68,7 +69,7 @@ function au1_approvalAuthority(
     if (index.schemaInvalid.has(ar.id)) continue;
     if (ar.status !== "accepted") continue;
 
-    const area = (ar.metadata as Record<string, unknown>).area as string | undefined;
+    const area = ar.metadata.area as string | undefined;
     let action: AuthorityAction;
     switch (area) {
       case "security":
@@ -116,10 +117,8 @@ function au3_waiverAuthority(
     const target = index.get(targetId);
     if (!target || target.kind !== "review_gate") continue;
 
-    const gateMeta = target.metadata as Record<string, unknown>;
-    const tags = gateMeta.tags as string[] | undefined;
-    // review_gate schema: metadata.subject is an enum including "security"
-    const isSecurity = (gateMeta.subject as string | undefined) === "security";
+    const gateMeta = asReviewGateMetadata(target);
+    const isSecurity = gateMeta.subject === "security";
     const isBlocking = gateMeta.gate_class === "blocking";
 
     let action: AuthorityAction;
@@ -178,7 +177,8 @@ function au5_acceptanceAuthority(
 ): void {
   for (const ad of index.allOfKind("acceptance_decision")) {
     if (index.schemaInvalid.has(ad.id)) continue;
-    const approvers = ad.spec.approvers as Array<Record<string, unknown>> | undefined;
+    const adSpec = asAcceptanceDecisionSpec(ad);
+    const approvers = adSpec.approvers;
     if (!approvers || approvers.length === 0) {
       findings.push({
         code: "BDSK-AUTH-003",
@@ -191,7 +191,8 @@ function au5_acceptanceAuthority(
       continue;
     }
 
-    const roles = approvers.map((a) => a.role as string).filter(Boolean);
+    // Approvers in spec are string IDs; authority roles come from the envelope's approvals field
+    const roles = ad.approvals.map((a) => a.authority_role).filter(Boolean);
     const action: AuthorityAction = "acceptance_decision";
     if (!satisfiesAuthority(action, roles, config)) {
       findings.push({

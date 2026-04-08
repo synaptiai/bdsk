@@ -1,7 +1,8 @@
 import { ArtifactIndex } from "../core/artifact-index.js";
+import { asExecutionPlanSpec, asExecutionEvalSpec, asAcceptanceDecisionSpec } from "../types/artifact.js";
 import type { Finding } from "../types/findings.js";
 
-export function validateReferentialIntegrity(index: ArtifactIndex): Finding[] {
+export function validateReferentialIntegrity(index: ArtifactIndex, now?: Date): Finding[] {
   const findings: Finding[] = [];
 
   ri1_targetExistence(index, findings);
@@ -9,7 +10,7 @@ export function validateReferentialIntegrity(index: ArtifactIndex): Finding[] {
   ri4_diffMappingCompleteness(index, findings);
   ri5_verificationCoverage(index, findings);
   ri6_gateEvaluationCoverage(index, findings);
-  ri7_waiverTargetValidity(index, findings);
+  ri7_waiverTargetValidity(index, findings, now ?? new Date());
   ri8_acceptanceEvidenceCompleteness(index, findings);
   ri9_supersessionConsistency(index, findings);
   ri10_executionCompletionIntegrity(index, findings);
@@ -84,7 +85,7 @@ function ri4_diffMappingCompleteness(index: ArtifactIndex, findings: Finding[]):
 function ri5_verificationCoverage(index: ArtifactIndex, findings: Finding[]): void {
   for (const ep of index.allOfKind("execution_plan")) {
     if (index.schemaInvalid.has(ep.id)) continue;
-    const behaviors = (ep.spec.required_inputs as Record<string, unknown>)?.behaviors as string[] | undefined;
+    const behaviors = asExecutionPlanSpec(ep).required_inputs?.behaviors;
     if (!behaviors) continue;
     for (const bsId of behaviors) {
       // Find verification artifacts that prove this behavior spec
@@ -108,19 +109,19 @@ function ri5_verificationCoverage(index: ArtifactIndex, findings: Finding[]): vo
 function ri6_gateEvaluationCoverage(index: ArtifactIndex, findings: Finding[]): void {
   for (const ep of index.allOfKind("execution_plan")) {
     if (index.schemaInvalid.has(ep.id)) continue;
-    const gates = (ep.spec.required_inputs as Record<string, unknown>)?.review_gates as string[] | undefined;
+    const gates = asExecutionPlanSpec(ep).required_inputs?.review_gates;
     if (!gates) continue;
     for (const gateId of gates) {
       // Find evals by subject_gate field or by trace edge
       const evalsByTrace = index.incomingRefs(gateId, "evaluates")
         .filter((a) => a.kind === "execution_eval");
       const evalsByField = index.allOfKind("execution_eval")
-        .filter((ee) => (ee.spec as Record<string, unknown>).subject_gate === gateId);
+        .filter((ee) => asExecutionEvalSpec(ee).subject_gate === gateId);
       const evals = [...new Map([...evalsByTrace, ...evalsByField].map((e) => [e.id, e])).values()];
       const waiversByTrace = index.incomingRefs(gateId, "waives")
         .filter((a) => a.kind === "waiver_record" && a.status === "approved");
       const waiversByField = index.allOfKind("waiver_record")
-        .filter((w) => w.status === "approved" && (w.spec as Record<string, unknown>).waived_target === gateId);
+        .filter((w) => w.status === "approved" && w.spec.waived_target === gateId);
       const waivers = [...new Map([...waiversByTrace, ...waiversByField].map((w) => [w.id, w])).values()];
       if (evals.length === 0 && waivers.length === 0) {
         findings.push({
@@ -137,7 +138,7 @@ function ri6_gateEvaluationCoverage(index: ArtifactIndex, findings: Finding[]): 
 }
 
 /** RI-7: Waiver targets must exist and be waivable. */
-function ri7_waiverTargetValidity(index: ArtifactIndex, findings: Finding[]): void {
+function ri7_waiverTargetValidity(index: ArtifactIndex, findings: Finding[], now: Date): void {
   for (const waiver of index.allOfKind("waiver_record")) {
     if (index.schemaInvalid.has(waiver.id)) continue;
     const targetId = waiver.spec.waived_target as string | undefined;
@@ -167,7 +168,7 @@ function ri7_waiverTargetValidity(index: ArtifactIndex, findings: Finding[]): vo
     const validUntil = waiver.spec.valid_until as string | undefined;
     if (validUntil) {
       const expiry = new Date(validUntil);
-      if (expiry < new Date()) {
+      if (expiry < now) {
         findings.push({
           code: "BDSK-WAIVER-002",
           severity: "warning",
@@ -185,10 +186,10 @@ function ri7_waiverTargetValidity(index: ArtifactIndex, findings: Finding[]): vo
 function ri8_acceptanceEvidenceCompleteness(index: ArtifactIndex, findings: Finding[]): void {
   for (const ad of index.allOfKind("acceptance_decision")) {
     if (index.schemaInvalid.has(ad.id)) continue;
-    const outcome = (ad.metadata as Record<string, unknown>).outcome as string | undefined;
+    const outcome = ad.metadata.outcome as string | undefined;
     if (outcome !== "accepted" && outcome !== "conditionally_accepted") continue;
 
-    const subjectDiffs = ad.spec.subject_diffs as string[] | undefined;
+    const subjectDiffs = asAcceptanceDecisionSpec(ad).subject_diffs;
     if (!subjectDiffs || subjectDiffs.length === 0) {
       findings.push({
         code: "BDSK-ACC-001",

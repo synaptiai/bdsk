@@ -148,6 +148,7 @@ export async function validate(options: ValidateOptions): Promise<ConformanceRep
   const report: ConformanceReport = {
     validator_version: VALIDATOR_VERSION,
     spec_version: "0.3",
+    repository_path: repoRoot,
     repository_outcome: errors.length === 0 ? "conformant" : "non_conformant",
     summary: {
       artifact_count: index.byId.size,

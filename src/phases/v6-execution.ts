@@ -1,4 +1,5 @@
 import { ArtifactIndex } from "../core/artifact-index.js";
+import { asExecutionPlanSpec, asExecutionEvalSpec, asExecutionLogSpec, asReviewGateMetadata } from "../types/artifact.js";
 import type { Finding } from "../types/findings.js";
 
 export function validateExecutionConformance(index: ArtifactIndex): Finding[] {
@@ -20,12 +21,13 @@ function algorithmA_executionStart(
   epId: string,
   findings: Finding[],
 ): void {
-  const ep = index.get(epId)!;
-  const inputs = ep.spec.required_inputs as Record<string, unknown> | undefined;
+  const ep = index.get(epId);
+  if (!ep) return;
+  const inputs = asExecutionPlanSpec(ep).required_inputs;
   if (!inputs) return;
 
   // Check required policies exist
-  const policies = inputs.policies as string[] | undefined;
+  const policies = inputs.policies;
   if (policies) {
     for (const policyId of policies) {
       if (!index.get(policyId)) {
@@ -42,7 +44,7 @@ function algorithmA_executionStart(
   }
 
   // Check required review gates exist
-  const gates = inputs.review_gates as string[] | undefined;
+  const gates = inputs.review_gates;
   if (gates) {
     for (const gateId of gates) {
       if (!index.get(gateId)) {
@@ -61,7 +63,7 @@ function algorithmA_executionStart(
   // Check no high/critical assumptions are unresolved
   for (const ar of index.allOfKind("assumption_record")) {
     if (index.schemaInvalid.has(ar.id)) continue;
-    const impact = (ar.metadata as Record<string, unknown>).impact_level as string | undefined;
+    const impact = ar.metadata.impact_level as string | undefined;
     if ((impact === "high" || impact === "critical") &&
         (ar.status === "proposed" || ar.status === "needs-review")) {
       // Only flag if this assumption is referenced by this plan
@@ -93,13 +95,13 @@ function algorithmB_stopConditions(
 
   for (const log of logs) {
     if (index.schemaInvalid.has(log.id)) continue;
-    const triggered = log.spec.stop_conditions_triggered as string[] | undefined;
+    const triggered = asExecutionLogSpec(log).stop_conditions_triggered;
     if (!triggered || triggered.length === 0) continue;
 
     // Per the schema, stop_conditions_triggered is string[].
     // Any triggered stop condition in a completed log is a breach
     // unless final_state is "aborted" or "escalated".
-    const finalState = log.spec.final_state as string | undefined;
+    const finalState = asExecutionLogSpec(log).final_state;
     if (finalState === "aborted" || finalState === "escalated") continue;
 
     for (const condition of triggered) {
@@ -133,27 +135,28 @@ function algorithmC_gateEvaluation(
   epId: string,
   findings: Finding[],
 ): void {
-  const ep = index.get(epId)!;
-  const inputs = ep.spec.required_inputs as Record<string, unknown> | undefined;
-  const gateIds = inputs?.review_gates as string[] | undefined;
+  const ep = index.get(epId);
+  if (!ep) return;
+  const inputs = asExecutionPlanSpec(ep).required_inputs;
+  const gateIds = inputs?.review_gates;
   if (!gateIds) return;
 
   for (const gateId of gateIds) {
     const gate = index.get(gateId);
     if (!gate) continue; // Algorithm A already catches missing gates
 
-    const gateClass = (gate.metadata as Record<string, unknown>).gate_class as string | undefined;
+    const gateClass = asReviewGateMetadata(gate).gate_class;
 
     // Find execution_eval for this gate
     const evals = index.allOfKind("execution_eval").filter((ee) => {
-      const subjectGate = (ee.spec as Record<string, unknown>).subject_gate as string | undefined;
+      const subjectGate = asExecutionEvalSpec(ee).subject_gate as string | undefined;
       return subjectGate === gateId;
     });
 
     // Find approved waivers
     const waivers = index.allOfKind("waiver_record").filter((w) =>
       w.status === "approved" &&
-      (w.spec as Record<string, unknown>).waived_target === gateId,
+      w.spec.waived_target === gateId,
     );
 
     if (evals.length === 0 && waivers.length === 0) {
@@ -170,7 +173,7 @@ function algorithmC_gateEvaluation(
 
     // Check eval results
     for (const ee of evals) {
-      const result = (ee.spec as Record<string, unknown>).result as string | undefined;
+      const result = asExecutionEvalSpec(ee).result as string | undefined;
 
       if (result === "fail" && gateClass === "blocking") {
         if (waivers.length === 0) {
@@ -187,7 +190,7 @@ function algorithmC_gateEvaluation(
     }
 
     if (gateClass === "manual-review") {
-      const passed = evals.some((ee) => (ee.spec as Record<string, unknown>).result === "pass");
+      const passed = evals.some((ee) => asExecutionEvalSpec(ee).result === "pass");
       if (!passed) {
         findings.push({
           code: "BDSK-GATE-002",
@@ -201,7 +204,7 @@ function algorithmC_gateEvaluation(
     }
 
     if (gateClass === "escalation") {
-      const passed = evals.some((ee) => (ee.spec as Record<string, unknown>).result === "pass");
+      const passed = evals.some((ee) => asExecutionEvalSpec(ee).result === "pass");
       if (!passed) {
         findings.push({
           code: "BDSK-GATE-003",

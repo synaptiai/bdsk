@@ -12,16 +12,17 @@ if [ ! -d "$ACTIVE_DIR" ] || [ -z "$(ls -A "$ACTIVE_DIR" 2>/dev/null)" ]; then
   exit 0
 fi
 
-# Read the file path from stdin
+# Read the file path and tool name from stdin
 INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | python3 -c "
+read -r FILE_PATH TOOL_NAME <<< $(echo "$INPUT" | python3 -c "
 import sys, json
 try:
     data = json.load(sys.stdin)
     fp = data.get('tool_input', {}).get('file_path', '')
-    print(fp)
+    tn = data.get('tool_name', 'edit').lower()
+    print(fp, tn)
 except:
-    print('')
+    print('', 'edit')
 " 2>/dev/null)
 
 [ -z "$FILE_PATH" ] && exit 0
@@ -33,10 +34,10 @@ fi
 
 # Append to change log with proper JSON escaping
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-BDSK_FILE="$FILE_PATH" BDSK_TS="$TIMESTAMP" python3 -c "
+BDSK_FILE="$FILE_PATH" BDSK_TS="$TIMESTAMP" BDSK_ACTION="$TOOL_NAME" python3 -c "
 import json, os, sys
 try:
-    entry = json.dumps({'file': os.environ['BDSK_FILE'], 'timestamp': os.environ['BDSK_TS'], 'action': 'edit'})
+    entry = json.dumps({'file': os.environ['BDSK_FILE'], 'timestamp': os.environ['BDSK_TS'], 'action': os.environ.get('BDSK_ACTION', 'edit')})
     print(entry)
 except:
     pass

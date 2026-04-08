@@ -6,6 +6,8 @@ description: |
 allowed-tools:
   - Read
   - Write
+  - Glob
+  - Grep
   - AskUserQuestion
   - Bash
 ---
