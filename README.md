@@ -26,13 +26,7 @@ BDSK solves a specific class of problems in AI-assisted development:
 ### Install as a Claude Code plugin
 
 ```bash
-claude plugin add /path/to/bdsk
-```
-
-Or install from a git URL once published:
-
-```bash
-claude plugin add <git-url>
+claude plugin add github:synaptiai/bdsk
 ```
 
 ### Initialize your repository

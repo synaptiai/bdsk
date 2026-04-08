@@ -5,6 +5,8 @@
   "author": {
     "name": "Daniel Bentes"
   },
+  "repository": "https://github.com/synaptiai/bdsk",
+  "homepage": "https://github.com/synaptiai/bdsk",
   "license": "MIT",
   "keywords": ["bdsk", "specification", "governance", "bdd"]
 }
