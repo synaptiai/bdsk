@@ -4,7 +4,7 @@ BDSK is a specification-first governance system for AI-assisted code generation.
 
 ## Specification
 
-The authoritative spec is `bdsk_specification_v_0.md` (v0.3). JSON schemas are in `schemas/`. The validator architecture is in `validator-spec.md`.
+The authoritative spec is `bdsk_specification_v_0.md` (v0.3). JSON schemas are in `schemas/`. This repo is also a Claude Code plugin — skills are in `skills/`, hooks in `hooks/`, and the compiled validator in `dist/`.
 
 ## BDSK Lifecycle
 
@@ -45,4 +45,5 @@ BDSK artifacts live in `artifacts/` organized by type. Artifacts are YAML files 
 ## Testing
 
 Run hook tests: `bash test/test-hooks.sh`
-Validate schemas: `python3 -c "import json; [json.load(open(f'schemas/{f}')) for f in __import__('os').listdir('schemas')]"`
+Run validator: `node dist/cli.js . --format text --verbose --schemas-dir schemas`
+Build validator: `bun run build`

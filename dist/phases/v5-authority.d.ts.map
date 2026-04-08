@@ -1,0 +1,1 @@
+{"version":3,"file":"v5-authority.d.ts","sourceRoot":"","sources":["../../src/phases/v5-authority.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,aAAa,EAAE,MAAM,2BAA2B,CAAC;AAE1D,OAAO,EAEL,KAAK,eAAe,EAGrB,MAAM,6BAA6B,CAAC;AACrC,OAAO,KAAK,EAAE,OAAO,EAAE,MAAM,sBAAsB,CAAC;AAEpD,wBAAgB,iBAAiB,CAC/B,KAAK,EAAE,aAAa,EACpB,MAAM,CAAC,EAAE,eAAe,GACvB,OAAO,EAAE,CASX"}

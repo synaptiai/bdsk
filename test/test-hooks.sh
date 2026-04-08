@@ -5,7 +5,7 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-HOOK_DIR="$REPO_ROOT/.claude/hooks"
+HOOK_DIR="$REPO_ROOT/hooks"
 STATE_DIR="$REPO_ROOT/.claude/state"
 FIXTURE_DIR="$REPO_ROOT/test/fixtures"
 PASS=0

@@ -1,0 +1,10 @@
+{
+  "name": "bdsk",
+  "version": "0.3.0",
+  "description": "Behavior-Driven Specification Kit — specification-first governance for AI-assisted code generation",
+  "author": {
+    "name": "Daniel Bentes"
+  },
+  "license": "MIT",
+  "keywords": ["bdsk", "specification", "governance", "bdd"]
+}

@@ -1,0 +1,1 @@
+{"version":3,"file":"compatibility-matrix.d.ts","sourceRoot":"","sources":["../../src/core/compatibility-matrix.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,YAAY,EAAE,SAAS,EAAE,MAAM,sBAAsB,CAAC;AA+CpE;;;GAGG;AACH,wBAAgB,YAAY,CAC1B,UAAU,EAAE,YAAY,EACxB,IAAI,EAAE,SAAS,EACf,SAAS,EAAE,UAAU,GAAG,YAAY,EACpC,UAAU,EAAE,YAAY,GACvB,OAAO,CAKT"}
