@@ -1,0 +1,89 @@
+{
+  "$id": "https://bdsk.dev/schemas/codegen_policy.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BDSK Codegen Policy",
+  "description": "Schema for codegen_policy artifacts per BDSK v0.3. Defines what AI is allowed and forbidden to do during code generation.",
+  "allOf": [
+    { "$ref": "common.json#/$defs/artifactEnvelope" },
+    {
+      "properties": {
+        "kind": { "const": "codegen_policy" },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "approved", "superseded", "archived"]
+        },
+        "metadata": {
+          "type": "object",
+          "required": ["scope"],
+          "properties": {
+            "scope": {
+              "type": "string",
+              "enum": ["repo-wide", "domain-specific", "path-specific"]
+            }
+          },
+          "additionalProperties": false
+        },
+        "spec": {
+          "type": "object",
+          "required": [
+            "applies_to_paths",
+            "approved_dependencies",
+            "forbidden_dependencies",
+            "approved_patterns",
+            "forbidden_patterns",
+            "file_rules",
+            "required_generation_behaviors",
+            "stop_conditions"
+          ],
+          "properties": {
+            "applies_to_paths": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "approved_dependencies": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "forbidden_dependencies": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "approved_patterns": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "forbidden_patterns": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "file_rules": {
+              "type": "object",
+              "required": ["manual_review_required", "never_modify"],
+              "properties": {
+                "manual_review_required": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "never_modify": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              },
+              "additionalProperties": false
+            },
+            "required_generation_behaviors": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "stop_conditions": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["metadata", "spec"]
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "$id": "https://bdsk.dev/schemas/waiver_record.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BDSK Waiver Record",
+  "description": "Schema for waiver_record artifacts per BDSK v0.3. Explicitly waives a review gate or rule with recorded justification and compensating controls.",
+  "allOf": [
+    { "$ref": "common.json#/$defs/artifactEnvelope" },
+    {
+      "properties": {
+        "kind": { "const": "waiver_record" },
+        "status": {
+          "type": "string",
+          "enum": ["proposed", "approved", "expired", "revoked"]
+        },
+        "metadata": {
+          "type": "object",
+          "required": ["waiver_scope"],
+          "properties": {
+            "waiver_scope": {
+              "type": "string",
+              "enum": ["single_execution", "time_bounded", "artifact_bounded"]
+            }
+          },
+          "additionalProperties": false
+        },
+        "spec": {
+          "type": "object",
+          "required": [
+            "waived_target",
+            "justification",
+            "authority",
+            "valid_from",
+            "valid_until",
+            "compensating_controls",
+            "residual_risks"
+          ],
+          "properties": {
+            "waived_target": { "$ref": "common.json#/$defs/id" },
+            "justification": { "type": "string", "minLength": 1 },
+            "authority": { "type": "string", "minLength": 1 },
+            "valid_from": { "type": "string", "format": "date-time" },
+            "valid_until": { "type": "string", "format": "date-time" },
+            "compensating_controls": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "residual_risks": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["metadata", "spec"]
+    }
+  ]
+}

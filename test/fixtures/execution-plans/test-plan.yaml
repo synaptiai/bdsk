@@ -1,0 +1,45 @@
+kind: execution_plan
+schema_version: "0.3"
+id: EP-test-001
+title: Test execution plan
+status: approved
+owners:
+  - test_user
+created_at: "2026-04-08T00:00:00Z"
+updated_at: "2026-04-08T00:00:00Z"
+trace:
+  upstream:
+    - target_id: BS-test-001
+      edge: depends_on
+  downstream: []
+approvals:
+  - authority_role: technical_authority
+    approver: test_user
+    approved_at: "2026-04-08T00:00:00Z"
+metadata:
+  change_type: new_feature
+spec:
+  objective: Test execution
+  in_scope_paths:
+    - src/
+    - test/
+  out_of_scope_paths:
+    - bdsk_specification_v_0.md
+    - schemas/
+  allowed_operations:
+    - create_files
+    - modify_files
+  forbidden_operations:
+    - modify_spec
+  required_inputs:
+    behaviors:
+      - BS-test-001
+    assumptions: []
+    contracts: []
+    policies: []
+    review_gates: []
+  required_outputs:
+    - generated_diff
+  escalation_conditions: []
+  completion_criteria:
+    - all changes within scope

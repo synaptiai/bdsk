@@ -1,0 +1,39 @@
+{
+  "$id": "https://bdsk.dev/schemas/contract_artifact.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BDSK Contract Artifact",
+  "description": "Schema for contract_artifact artifacts per BDSK v0.3. Defines machine boundaries such as API schemas, event schemas, or database schemas.",
+  "allOf": [
+    { "$ref": "common.json#/$defs/artifactEnvelope" },
+    {
+      "properties": {
+        "kind": { "const": "contract_artifact" },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "approved", "superseded", "archived"]
+        },
+        "metadata": {
+          "type": "object",
+          "required": ["contract_type"],
+          "properties": {
+            "contract_type": {
+              "type": "string",
+              "enum": ["openapi", "json-schema", "event-schema", "db-schema"]
+            }
+          },
+          "additionalProperties": false
+        },
+        "spec": {
+          "type": "object",
+          "required": ["location", "governed_boundary"],
+          "properties": {
+            "location": { "type": "string", "minLength": 1 },
+            "governed_boundary": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["metadata", "spec"]
+    }
+  ]
+}

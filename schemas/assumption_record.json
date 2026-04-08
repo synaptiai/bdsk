@@ -1,0 +1,62 @@
+{
+  "$id": "https://bdsk.dev/schemas/assumption_record.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BDSK Assumption Record",
+  "description": "Schema for assumption_record artifacts per BDSK v0.3. Captures decisions, beliefs, or unresolved inferences that affect implementation.",
+  "allOf": [
+    { "$ref": "common.json#/$defs/artifactEnvelope" },
+    {
+      "properties": {
+        "kind": { "const": "assumption_record" },
+        "status": {
+          "type": "string",
+          "enum": ["proposed", "accepted", "rejected", "superseded", "expired", "needs-review"]
+        },
+        "metadata": {
+          "type": "object",
+          "required": ["impact_level", "area"],
+          "properties": {
+            "impact_level": {
+              "type": "string",
+              "enum": ["low", "medium", "high", "critical"]
+            },
+            "area": {
+              "type": "string",
+              "enum": ["security", "product", "architecture", "compliance", "other"]
+            }
+          },
+          "additionalProperties": false
+        },
+        "spec": {
+          "type": "object",
+          "required": [
+            "statement",
+            "rationale",
+            "source_type",
+            "source_refs",
+            "decision_authority",
+            "review_by",
+            "resolution_rule"
+          ],
+          "properties": {
+            "statement": { "type": "string", "minLength": 1 },
+            "rationale": { "type": "string", "minLength": 1 },
+            "source_type": {
+              "type": "string",
+              "enum": ["documented", "inferred", "decision", "external-standard", "legacy-system"]
+            },
+            "source_refs": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "decision_authority": { "type": "string", "minLength": 1 },
+            "review_by": { "type": "string", "minLength": 1 },
+            "resolution_rule": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["metadata", "spec"]
+    }
+  ]
+}

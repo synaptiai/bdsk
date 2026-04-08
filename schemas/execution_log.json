@@ -1,0 +1,71 @@
+{
+  "$id": "https://bdsk.dev/schemas/execution_log.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BDSK Execution Log",
+  "description": "Schema for execution_log artifacts per BDSK v0.3. Records what the AI agent consulted, produced, and decided during an execution session.",
+  "allOf": [
+    { "$ref": "common.json#/$defs/artifactEnvelope" },
+    {
+      "properties": {
+        "kind": { "const": "execution_log" },
+        "status": {
+          "type": "string",
+          "enum": ["in_progress", "completed", "aborted"]
+        },
+        "metadata": {
+          "type": "object",
+          "required": ["executor_type"],
+          "properties": {
+            "executor_type": {
+              "type": "string",
+              "enum": ["ai_agent", "human", "hybrid"]
+            },
+            "executor_id": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "spec": {
+          "type": "object",
+          "required": [
+            "consulted_artifacts",
+            "steps",
+            "emitted_outputs",
+            "surfaced_uncertainties",
+            "stop_conditions_triggered",
+            "final_state"
+          ],
+          "properties": {
+            "consulted_artifacts": {
+              "type": "array",
+              "items": { "$ref": "common.json#/$defs/id" }
+            },
+            "steps": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "emitted_outputs": {
+              "type": "array",
+              "items": { "$ref": "common.json#/$defs/id" }
+            },
+            "surfaced_uncertainties": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "stop_conditions_triggered": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "final_state": {
+              "type": "string",
+              "enum": ["completed", "aborted", "escalated"]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["metadata", "spec"]
+    }
+  ]
+}

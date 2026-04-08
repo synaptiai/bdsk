@@ -1,0 +1,63 @@
+{
+  "$id": "https://bdsk.dev/schemas/execution_eval.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BDSK Execution Eval",
+  "description": "Schema for execution_eval artifacts per BDSK v0.3. Assesses whether the AI generation process stayed within approved scope, policy, and decision boundaries.",
+  "allOf": [
+    { "$ref": "common.json#/$defs/artifactEnvelope" },
+    {
+      "properties": {
+        "kind": { "const": "execution_eval" },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "completed", "failed", "waived"]
+        },
+        "metadata": {
+          "type": "object",
+          "required": ["eval_type"],
+          "properties": {
+            "eval_type": {
+              "type": "string",
+              "enum": [
+                "scope_check",
+                "policy_check",
+                "traceability_check",
+                "grounding_check",
+                "uncertainty_check",
+                "gate_check"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "spec": {
+          "type": "object",
+          "required": [
+            "subject_diff",
+            "result",
+            "findings",
+            "evidence"
+          ],
+          "properties": {
+            "subject_diff": { "$ref": "common.json#/$defs/id" },
+            "subject_gate": { "$ref": "common.json#/$defs/id" },
+            "result": {
+              "type": "string",
+              "enum": ["pass", "warn", "fail", "escalate"]
+            },
+            "findings": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "evidence": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["metadata", "spec"]
+    }
+  ]
+}

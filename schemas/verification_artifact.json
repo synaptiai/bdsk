@@ -1,0 +1,62 @@
+{
+  "$id": "https://bdsk.dev/schemas/verification_artifact.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BDSK Verification Artifact",
+  "description": "Schema for verification_artifact artifacts per BDSK v0.3. Proves that generated implementation satisfies intended behavior or contract.",
+  "allOf": [
+    { "$ref": "common.json#/$defs/artifactEnvelope" },
+    {
+      "properties": {
+        "kind": { "const": "verification_artifact" },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "approved", "obsolete"]
+        },
+        "metadata": {
+          "type": "object",
+          "required": ["verification_type"],
+          "properties": {
+            "verification_type": {
+              "type": "string",
+              "enum": [
+                "acceptance_test",
+                "unit_test",
+                "integration_test",
+                "contract_check",
+                "property_check",
+                "review_checklist"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "spec": {
+          "type": "object",
+          "required": [
+            "location",
+            "proves",
+            "execution_result",
+            "evidence_refs"
+          ],
+          "properties": {
+            "location": { "type": "string", "minLength": 1 },
+            "proves": {
+              "type": "array",
+              "items": { "$ref": "common.json#/$defs/id" }
+            },
+            "execution_result": {
+              "type": "string",
+              "enum": ["pass", "fail", "not_run", "waived"]
+            },
+            "evidence_refs": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["metadata", "spec"]
+    }
+  ]
+}

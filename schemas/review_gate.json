@@ -1,0 +1,69 @@
+{
+  "$id": "https://bdsk.dev/schemas/review_gate.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BDSK Review Gate",
+  "description": "Schema for review_gate artifacts per BDSK v0.3. Defines checkpoints that control whether generated output may proceed toward acceptance.",
+  "allOf": [
+    { "$ref": "common.json#/$defs/artifactEnvelope" },
+    {
+      "properties": {
+        "kind": { "const": "review_gate" },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "approved", "retired"]
+        },
+        "metadata": {
+          "type": "object",
+          "required": ["gate_class", "subject"],
+          "properties": {
+            "gate_class": {
+              "type": "string",
+              "enum": ["blocking", "warning", "manual-review", "escalation"]
+            },
+            "subject": {
+              "type": "string",
+              "enum": ["scope", "dependencies", "contracts", "tests", "security", "architecture", "other"]
+            }
+          },
+          "additionalProperties": false
+        },
+        "spec": {
+          "type": "object",
+          "required": [
+            "description",
+            "applies_when",
+            "evaluation_method",
+            "pass_condition",
+            "fail_action",
+            "evidence_required"
+          ],
+          "properties": {
+            "description": { "type": "string", "minLength": 1 },
+            "applies_when": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "evaluation_method": {
+              "type": "string",
+              "enum": ["static_check", "human_review", "diff_analysis", "contract_check", "spec_coverage", "other"]
+            },
+            "pass_condition": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "fail_action": {
+              "type": "string",
+              "enum": ["block", "warn", "require_manual_review", "escalate"]
+            },
+            "evidence_required": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["metadata", "spec"]
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "$id": "https://bdsk.dev/schemas/execution_plan.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BDSK Execution Plan",
+  "description": "Schema for execution_plan artifacts per BDSK v0.3. Defines the scope, inputs, constraints, and outputs for an AI-assisted code generation session.",
+  "allOf": [
+    { "$ref": "common.json#/$defs/artifactEnvelope" },
+    {
+      "properties": {
+        "kind": { "const": "execution_plan" },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "approved", "completed", "aborted"]
+        },
+        "metadata": {
+          "type": "object",
+          "required": ["change_type"],
+          "properties": {
+            "change_type": {
+              "type": "string",
+              "enum": ["new_feature", "bugfix", "refactor", "migration", "hardening"]
+            }
+          },
+          "additionalProperties": false
+        },
+        "spec": {
+          "type": "object",
+          "required": [
+            "objective",
+            "in_scope_paths",
+            "out_of_scope_paths",
+            "allowed_operations",
+            "forbidden_operations",
+            "required_inputs",
+            "required_outputs",
+            "escalation_conditions",
+            "completion_criteria"
+          ],
+          "properties": {
+            "objective": { "type": "string", "minLength": 1 },
+            "in_scope_paths": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "out_of_scope_paths": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "allowed_operations": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "forbidden_operations": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "required_inputs": {
+              "type": "object",
+              "required": [
+                "behaviors",
+                "assumptions",
+                "contracts",
+                "policies",
+                "review_gates"
+              ],
+              "properties": {
+                "behaviors": {
+                  "type": "array",
+                  "items": { "$ref": "common.json#/$defs/id" }
+                },
+                "assumptions": {
+                  "type": "array",
+                  "items": { "$ref": "common.json#/$defs/id" }
+                },
+                "contracts": {
+                  "type": "array",
+                  "items": { "$ref": "common.json#/$defs/id" }
+                },
+                "policies": {
+                  "type": "array",
+                  "items": { "$ref": "common.json#/$defs/id" }
+                },
+                "review_gates": {
+                  "type": "array",
+                  "items": { "$ref": "common.json#/$defs/id" }
+                }
+              },
+              "additionalProperties": false
+            },
+            "required_outputs": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "escalation_conditions": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "completion_criteria": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["metadata", "spec"]
+    }
+  ]
+}

@@ -113,6 +113,13 @@ Any material assumption that affects implementation MUST be captured as a first-
 ### 4. grounding before generation
 AI MUST NOT introduce external interfaces, library usage, or behavior claims unless they are grounded in approved artifacts or explicitly marked for review.
 
+Grounding sources include:
+
+- approved BDSK artifacts (behavior specs, contracts, assumptions, policies)
+- existing code in the repository (implicitly grounded; AI MAY reference and reuse existing code patterns without requiring a separate approval artifact)
+- well-known standards and protocols (HTTP, JSON, SQL, TLS, etc.) that are implicitly grounded by widespread adoption
+- external documentation explicitly referenced in a contract artifact or assumption record
+
 ### 5. observable verification
 Specified behavior MUST be verifiable through explicit checks.
 
@@ -142,6 +149,7 @@ updated_at: <ISO-8601 timestamp>
 trace:
   upstream: []
   downstream: []
+approvals: []
 metadata: {}
 spec: {}
 ```
@@ -157,8 +165,24 @@ spec: {}
 - `created_at`: REQUIRED.
 - `updated_at`: REQUIRED.
 - `trace`: REQUIRED.
+- `approvals`: OPTIONAL. When present, each entry records a specific approval decision.
 - `metadata`: OPTIONAL.
 - `spec`: REQUIRED.
+
+### approvals structure
+
+Each entry in the `approvals` array records a specific approval decision:
+
+```yaml
+approvals:
+  - authority_role: <canonical authority role>
+    approver: <person or identifier>
+    approved_at: <ISO-8601 timestamp>
+```
+
+- `authority_role`: REQUIRED. Must be one of the canonical authority roles or a custom role defined by the implementation.
+- `approver`: REQUIRED. The person or identifier who made the approval decision.
+- `approved_at`: REQUIRED. When the approval decision was made.
 
 ### common artifact statuses
 
@@ -170,6 +194,21 @@ Unless otherwise constrained by the artifact type, the following statuses MAY be
 - superseded
 - archived
 - rejected
+
+### terminal statuses
+
+The following statuses are terminal. An artifact in a terminal status MUST NOT transition to a non-terminal status without creating a new artifact that supersedes it.
+
+- `archived`: permanently stored, no longer active
+- `rejected`: permanently refused
+- `expired`: time-bounded validity has ended (assumption_record)
+- `revoked`: explicitly withdrawn (waiver_record)
+- `obsolete`: replaced by newer evidence (verification_artifact)
+- `superseded`: replaced by a newer version of the same artifact
+
+### status transition constraints
+
+An artifact MAY transition from any non-terminal status to any other non-terminal status appropriate for its kind. Implementations SHOULD log status transitions in the artifact's `updated_at` timestamp and, for approval transitions, in the `approvals` array.
 
 ## formal trace model
 
@@ -222,6 +261,12 @@ The edge type `evaluated_by` is not valid in v0.3.
 
 #### TR-5
 Trace relations SHOULD be directionally meaningful. The source artifact is always the artifact that contains the trace object.
+
+#### TR-6
+Artifacts representing initial specification work (behavior_spec, assumption_record) MAY have empty upstream trace arrays. This permits bootstrapping a BDSK repository without requiring prior artifacts to exist.
+
+#### TR-7
+If artifact A's upstream references artifact B with edge X, artifact B's downstream SHOULD reference artifact A with a consistent reciprocal edge. Implementations SHOULD validate bidirectional trace consistency.
 
 ## artifact types
 
@@ -327,7 +372,7 @@ trace:
     - target_id: <behavior ids>
       edge: constrains
     - target_id: <verification ids>
-      edge: proves
+      edge: constrains
 metadata:
   contract_type: <openapi|json-schema|event-schema|db-schema>
 spec:
@@ -614,7 +659,7 @@ trace:
 metadata:
   waiver_scope: <single_execution|time_bounded|artifact_bounded>
 spec:
-  waived_target: <gate id or rule id>
+  waived_target: <gate artifact id or canonical rule id (bdsk:rule:*)>
   justification: <why the waiver exists>
   authority: <role or person>
   valid_from: <ISO-8601 timestamp>
@@ -692,6 +737,7 @@ Execution-phase evals assess whether the AI generation process itself stayed wit
 - Verification artifacts MUST evaluate implementation correctness.
 - Execution-phase evals MUST evaluate generation-process conformance.
 - A single tool MAY implement both categories, but the evidence and result records MUST remain logically separate.
+- The same `evidence_refs` values MAY appear in both a verification_artifact and an execution_eval, provided the result records remain separate artifacts. This acknowledges that a single piece of evidence (such as a test result) can legitimately serve both verification and execution evaluation purposes.
 
 ## execution gate taxonomy
 
@@ -774,7 +820,15 @@ A BDSK implementation-grade validator MUST perform repository-level referential 
 ### integrity rules
 
 #### RI-1: referenced artifact existence
-Every `target_id` appearing in a structured trace reference MUST resolve to an existing artifact in the repository or registry.
+Every `target_id` appearing in a structured trace reference MUST resolve to an existing artifact in the repository or registry. Trace references to canonical rule IDs (`bdsk:rule:*`) are exempt from this check because rules are spec-level constraints, not repository artifacts.
+
+#### canonical rule IDs
+
+The following canonical rule IDs are defined for use in waiver targets and trace references:
+
+- `bdsk:rule:RI-1` through `bdsk:rule:RI-10` (referential integrity rules)
+- `bdsk:rule:AU-1` through `bdsk:rule:AU-5` (authority rules)
+- `bdsk:rule:TR-1` through `bdsk:rule:TR-7` (trace normalization rules)
 
 #### RI-2: kind compatibility
 A referenced artifact MUST be compatible with the edge type and source artifact kind.
@@ -829,6 +883,11 @@ Implementations SHOULD define authority roles explicitly. A minimum recommended 
 | waiver approval for warning or manual-review gate | technical_authority or qa_authority |
 | waiver approval for blocking security gate | security_authority |
 | acceptance decision | release_authority, with qa_authority for production-bound changes |
+| contract artifact approval | technical_authority |
+| generated diff verification | qa_authority or technical_authority |
+| verification artifact approval | qa_authority |
+| execution eval completion | technical_authority |
+| execution log completion | no authority required (auto-generated) |
 
 ### authority rules
 
@@ -908,6 +967,8 @@ A tool MUST NOT compute `accepted` unless all of the following are true:
 A tool MAY compute `conditionally_accepted` if all blocking conditions are satisfied or waived but residual non-blocking conditions remain and are recorded explicitly.
 
 Otherwise the outcome MUST be `rejected`.
+
+If any required transitive dependency is unresolvable (a referenced artifact does not exist in the repository), Algorithm E MUST return `indeterminate`. An `indeterminate` outcome is distinct from `rejected` and indicates that the repository state is insufficient to compute acceptance.
 
 ## machine-readable JSON Schema pack
 

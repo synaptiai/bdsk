@@ -1,0 +1,67 @@
+{
+  "$id": "https://bdsk.dev/schemas/common.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "traceEdge": {
+      "type": "string",
+      "enum": ["depends_on", "derived_from", "constrains", "implements", "proves", "evaluates", "produced_by", "supersedes", "escalates_to", "waives"]
+    },
+    "traceRef": {
+      "type": "object",
+      "required": ["target_id", "edge"],
+      "properties": {
+        "target_id": { "$ref": "#/$defs/id" },
+        "edge": { "$ref": "#/$defs/traceEdge" }
+      },
+      "additionalProperties": false
+    },
+    "trace": {
+      "type": "object",
+      "required": ["upstream", "downstream"],
+      "properties": {
+        "upstream": { "type": "array", "items": { "$ref": "#/$defs/traceRef" } },
+        "downstream": { "type": "array", "items": { "$ref": "#/$defs/traceRef" } }
+      },
+      "additionalProperties": false
+    },
+    "owners": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "approvalEntry": {
+      "type": "object",
+      "required": ["authority_role", "approver", "approved_at"],
+      "properties": {
+        "authority_role": { "type": "string", "minLength": 1 },
+        "approver": { "type": "string", "minLength": 1 },
+        "approved_at": { "$ref": "#/$defs/timestamp" }
+      },
+      "additionalProperties": false
+    },
+    "artifactEnvelope": {
+      "type": "object",
+      "required": ["kind", "schema_version", "id", "title", "status", "owners", "created_at", "updated_at", "trace", "spec"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "schema_version": { "const": "0.3" },
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 },
+        "owners": { "$ref": "#/$defs/owners" },
+        "created_at": { "$ref": "#/$defs/timestamp" },
+        "updated_at": { "$ref": "#/$defs/timestamp" },
+        "trace": { "$ref": "#/$defs/trace" },
+        "approvals": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/approvalEntry" }
+        },
+        "metadata": { "type": "object" },
+        "spec": { "type": "object" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

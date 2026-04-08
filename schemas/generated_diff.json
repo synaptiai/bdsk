@@ -1,0 +1,74 @@
+{
+  "$id": "https://bdsk.dev/schemas/generated_diff.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BDSK Generated Diff",
+  "description": "Schema for generated_diff artifacts per BDSK v0.3. Records the set of code or file changes produced during an execution session.",
+  "allOf": [
+    { "$ref": "common.json#/$defs/artifactEnvelope" },
+    {
+      "properties": {
+        "kind": { "const": "generated_diff" },
+        "status": {
+          "type": "string",
+          "enum": ["proposed", "verified", "rejected", "superseded"]
+        },
+        "metadata": {
+          "type": "object",
+          "required": ["change_scope", "summary"],
+          "properties": {
+            "change_scope": {
+              "type": "string",
+              "enum": ["bounded", "expanded", "violated"]
+            },
+            "summary": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        "spec": {
+          "type": "object",
+          "required": [
+            "changed_paths",
+            "operations",
+            "rationale",
+            "spec_mappings",
+            "assumption_mappings",
+            "contract_mappings",
+            "out_of_scope_findings"
+          ],
+          "properties": {
+            "changed_paths": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "operations": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "rationale": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "spec_mappings": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "assumption_mappings": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "contract_mappings": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "out_of_scope_findings": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["metadata", "spec"]
+    }
+  ]
+}
