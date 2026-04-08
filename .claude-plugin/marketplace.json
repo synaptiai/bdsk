@@ -1,0 +1,14 @@
+{
+  "name": "bdsk",
+  "owner": {
+    "name": "Synapti AI"
+  },
+  "plugins": [
+    {
+      "name": "bdsk",
+      "source": "./",
+      "description": "Behavior-Driven Specification Kit — specification-first governance for AI-assisted code generation",
+      "version": "0.3.0"
+    }
+  ]
+}

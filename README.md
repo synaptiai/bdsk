@@ -25,17 +25,11 @@ BDSK solves a specific class of problems in AI-assisted development:
 
 ### Install as a Claude Code plugin
 
-Inside Claude Code, add the marketplace and install:
+Inside Claude Code:
 
 ```
 /plugin marketplace add synaptiai/bdsk
-/plugin install bdsk@synaptiai-bdsk
-```
-
-Or use the interactive plugin manager:
-
-```
-/plugin
+/plugin install bdsk@bdsk
 ```
 
 ### Initialize your repository
