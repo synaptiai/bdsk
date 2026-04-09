@@ -21,8 +21,10 @@ Run BDSK validation on all artifacts.
 1. **Try the full validator first.** Run the compiled 8-phase validator:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/dist/cli.js" . --format text --verbose --schemas-dir "${CLAUDE_PLUGIN_ROOT}/schemas"
+node "${CLAUDE_PLUGIN_ROOT}/dist/cli.bundle.js" . --format text --verbose --schemas-dir "${CLAUDE_PLUGIN_ROOT}/schemas"
 ```
+
+If the bundle doesn't exist, fall back to `dist/cli.js` (requires `node_modules/`).
 
 If this succeeds (exit code 0 or 1), display the output and stop. The full validator covers all 8 phases:
 - V1: Artifact discovery and duplicate ID checking

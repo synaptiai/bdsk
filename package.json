@@ -1,6 +1,6 @@
 {
   "name": "bdsk-validator",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "description": "Reference validator for the BDSK v0.3 specification",
   "type": "module",
   "main": "dist/index.js",
@@ -8,7 +8,8 @@
     "bdsk-validate": "dist/cli.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && bun run bundle",
+    "bundle": "bun build hooks/validate-single-artifact.js --outfile dist/validate-single-artifact.bundle.js --target node && bun build dist/cli.js --outfile dist/cli.bundle.js --target node",
     "dev": "tsc --watch",
     "test": "bun test",
     "lint": "tsc --noEmit",

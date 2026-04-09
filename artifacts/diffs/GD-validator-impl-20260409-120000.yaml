@@ -1,0 +1,103 @@
+kind: generated_diff
+schema_version: "0.3"
+id: GD-validator-impl-20260409-120000
+title: "Generated diff for BDSK Reference Validator implementation"
+status: proposed
+owners:
+  - daniel-bentes
+created_at: "2026-04-09T12:00:00Z"
+updated_at: "2026-04-09T12:00:00Z"
+trace:
+  upstream:
+    - target_id: EP-validator-impl-20260408-130000
+      edge: produced_by
+    - target_id: BS-validator-pipeline-20260408-120000
+      edge: implements
+    - target_id: BS-v1-discovery-20260408-120001
+      edge: implements
+    - target_id: BS-v2-schema-20260408-120002
+      edge: implements
+    - target_id: BS-v3-trace-20260408-120003
+      edge: implements
+    - target_id: BS-v4-referential-20260408-120004
+      edge: implements
+    - target_id: BS-v5-authority-20260408-120005
+      edge: implements
+    - target_id: BS-v6-execution-20260408-120006
+      edge: implements
+    - target_id: BS-v7-verification-20260408-120007
+      edge: implements
+    - target_id: BS-v8-acceptance-20260408-120008
+      edge: implements
+  downstream: []
+approvals: []
+metadata:
+  change_scope: bounded
+  summary: "Full 8-phase BDSK reference validator: V1-V8 pipeline, CLI, library API, schemas, and integration tests"
+spec:
+  changed_paths:
+    - "src/cli.ts"
+    - "src/index.ts"
+    - "src/core/compatibility-matrix.ts"
+    - "src/core/default-authority-matrix.ts"
+    - "src/phases/v1-discovery.ts"
+    - "src/phases/v2-schema.ts"
+    - "src/phases/v3-trace.ts"
+    - "src/phases/v4-referential.ts"
+    - "src/phases/v5-authority.ts"
+    - "src/phases/v6-execution.ts"
+    - "src/phases/v7-verification.ts"
+    - "src/phases/v8-acceptance.ts"
+    - "src/types/artifact.ts"
+    - "src/types/finding.ts"
+    - "src/types/report.ts"
+    - "schemas/common.json"
+    - "schemas/behavior_spec.json"
+    - "schemas/assumption_record.json"
+    - "schemas/contract_artifact.json"
+    - "schemas/codegen_policy.json"
+    - "schemas/review_gate.json"
+    - "schemas/execution_plan.json"
+    - "schemas/generated_diff.json"
+    - "schemas/verification_artifact.json"
+    - "schemas/execution_eval.json"
+    - "schemas/execution_log.json"
+    - "schemas/waiver_record.json"
+    - "schemas/acceptance_decision.json"
+    - "test/integration.test.ts"
+    - "test/fixtures/conformant/"
+    - "test/fixtures/duplicate-ids/"
+    - "test/fixtures/missing-refs/"
+    - "test/fixtures/bad-traces/"
+    - "package.json"
+    - "tsconfig.json"
+  operations:
+    - "create src/**"
+    - "create schemas/**"
+    - "create test/**"
+    - "modify package.json"
+    - "create tsconfig.json"
+  rationale:
+    - "Implements the full 8-phase BDSK reference validator per validator-spec.md"
+    - "All changes within approved scope (src/**, test/**, schemas/**, package.json, tsconfig.json)"
+  spec_mappings:
+    - "BS-validator-pipeline-20260408-120000:src/index.ts,src/cli.ts"
+    - "BS-v1-discovery-20260408-120001:src/phases/v1-discovery.ts"
+    - "BS-v2-schema-20260408-120002:src/phases/v2-schema.ts"
+    - "BS-v3-trace-20260408-120003:src/phases/v3-trace.ts"
+    - "BS-v4-referential-20260408-120004:src/phases/v4-referential.ts"
+    - "BS-v5-authority-20260408-120005:src/phases/v5-authority.ts"
+    - "BS-v6-execution-20260408-120006:src/phases/v6-execution.ts"
+    - "BS-v7-verification-20260408-120007:src/phases/v7-verification.ts"
+    - "BS-v8-acceptance-20260408-120008:src/phases/v8-acceptance.ts"
+  assumption_mappings:
+    - "AR-typescript-ref-impl-20260408-120010:src/**"
+    - "AR-ajv-2020-12-20260408-120011:src/phases/v2-schema.ts"
+    - "AR-bundled-schemas-20260408-120012:schemas/**"
+    - "AR-sequential-phases-20260408-120013:src/index.ts"
+    - "AR-first-wins-duplicates-20260408-120014:src/phases/v1-discovery.ts"
+    - "AR-no-multidoc-yaml-20260408-120015:src/phases/v1-discovery.ts"
+    - "AR-authority-no-weaken-20260408-120016:src/phases/v5-authority.ts"
+    - "AR-standalone-package-20260408-120017:package.json"
+  contract_mappings: []
+  out_of_scope_findings: []

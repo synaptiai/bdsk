@@ -86,3 +86,18 @@ Artifacts created:
 - Always capture test output to a file for evidence_refs
 - Never modify test code — only run existing tests
 - verification_type should match the test type: `integration_test` for integration/, `unit_test` for unit/, `acceptance_test` for e2e/
+
+## Schema Compliance
+
+- **Use `edge: proves`, NOT `edge: verifies`.** `verifies` is not a valid BDSK edge. The 10 valid edges are: `depends_on`, `derived_from`, `constrains`, `implements`, `proves`, `evaluates`, `produced_by`, `supersedes`, `escalates_to`, `waives`.
+- **spec has exactly 4 fields**: `location`, `proves`, `execution_result`, `evidence_refs`. Do NOT use `subject_behavior`, `evidence`, `test_results`, `description`, or any other field name. Schema uses `additionalProperties: false`.
+- **metadata has exactly 1 field**: `verification_type`. No additional metadata fields.
+- **Trace refs** MUST be `{target_id: <id>, edge: <edge>}` objects, not bare string IDs.
+- **Approvals** MUST use `{authority_role: <role>, approver: <user>, approved_at: <ISO-8601>}`. Not `{date, decision}`.
+- **Valid authority roles** (5 total): `product_authority`, `technical_authority`, `security_authority`, `release_authority`, `qa_authority`.
+
+### Edge-kind rules for verification_artifact
+- Upstream `proves` → behavior_spec, contract_artifact (ONLY these two kinds)
+- Upstream `depends_on` → generated_diff (ONLY)
+- Do NOT link upstream to execution_plan (not in compatibility matrix for verification_artifact)
+- Do NOT use `edge: verifies` — it does not exist in BDSK

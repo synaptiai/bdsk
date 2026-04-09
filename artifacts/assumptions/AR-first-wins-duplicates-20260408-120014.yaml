@@ -13,7 +13,7 @@ trace:
       edge: derived_from
   downstream: []
 approvals:
-  - authority_role: technical_authority
+  - authority_role: product_authority
     approver: daniel-bentes
     approved_at: "2026-04-08T13:00:00Z"
 metadata:
@@ -36,7 +36,7 @@ spec:
   source_refs:
     - "validator-spec.md#5.1"
     - "validator-spec.md#1.4"
-  decision_authority: technical_authority
+  decision_authority: product_authority
   review_by: "2026-05-08T12:00:00Z"
   resolution_rule: >
     Accept as documented, but the implementation must sort discovered files

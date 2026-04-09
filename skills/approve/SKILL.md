@@ -64,6 +64,8 @@ Override the inferred authority role.
       - `assumption_record` (area: product) → `product_authority`
       - `assumption_record` (area: architecture) → `technical_authority`
       - `assumption_record` (area: security) → `security_authority`
+      - `assumption_record` (area: compliance) → `product_authority`
+      - `assumption_record` (area: other) → `product_authority`
       - `execution_plan` → `technical_authority`
       - `codegen_policy` → `technical_authority`
       - `review_gate` → `technical_authority`
@@ -89,3 +91,5 @@ Override the inferred authority role.
 - If batch/cascading and some artifacts are already approved, show which ones will be skipped
 - The `approvals: []` → structured entry replacement must handle both empty array and missing field
 - When approving behavior_specs that have `status: draft` appearing in examples too, use enough context to only match the envelope status field
+- **Canonical authority roles** (only use these 5): `product_authority`, `technical_authority`, `security_authority`, `release_authority`, `qa_authority`. Never use invented role names like `spec_approver`, `plan_approver`, or `assumption_approver`.
+- **Approvals format** MUST be `{authority_role: <role>, approver: <user>, approved_at: <ISO-8601>}`. Not `{date, decision}` or any other structure.

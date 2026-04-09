@@ -1,0 +1,27 @@
+kind: verification_artifact
+schema_version: "0.3"
+id: VA-validator-pipeline-20260409-120000
+title: "Verification for validator pipeline (V1-V8 sequential execution)"
+status: draft
+owners:
+  - daniel-bentes
+created_at: "2026-04-09T12:00:00Z"
+updated_at: "2026-04-09T12:00:00Z"
+trace:
+  upstream:
+    - target_id: BS-validator-pipeline-20260408-120000
+      edge: proves
+    - target_id: GD-validator-impl-20260409-120000
+      edge: depends_on
+  downstream: []
+approvals: []
+metadata:
+  verification_type: integration_test
+spec:
+  location: "test/integration.test.ts"
+  proves:
+    - BS-validator-pipeline-20260408-120000
+  execution_result: pass
+  evidence_refs:
+    - "test/integration.test.ts: 7 integration tests pass covering conformant, duplicate-ids, missing-refs, bad-traces, phase-filter, strict-mode, output-formats"
+    - "src/index.ts: validate() orchestrates V1-V8 sequentially"

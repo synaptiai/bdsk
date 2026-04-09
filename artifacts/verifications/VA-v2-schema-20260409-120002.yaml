@@ -1,0 +1,27 @@
+kind: verification_artifact
+schema_version: "0.3"
+id: VA-v2-schema-20260409-120002
+title: "Verification for V2 Schema Validation phase"
+status: draft
+owners:
+  - daniel-bentes
+created_at: "2026-04-09T12:00:02Z"
+updated_at: "2026-04-09T12:00:02Z"
+trace:
+  upstream:
+    - target_id: BS-v2-schema-20260408-120002
+      edge: proves
+    - target_id: GD-validator-impl-20260409-120000
+      edge: depends_on
+  downstream: []
+approvals: []
+metadata:
+  verification_type: integration_test
+spec:
+  location: "test/integration.test.ts"
+  proves:
+    - BS-v2-schema-20260408-120002
+  execution_result: pass
+  evidence_refs:
+    - "test/integration.test.ts: conformant fixture passes V2; bad-schema fixtures trigger BDSK-SCHEMA-002"
+    - "src/phases/v2-schema.ts: validates each artifact against JSON Schema using Ajv 2020-12"

@@ -98,3 +98,29 @@ Results:
 - For `blocking` gates that fail, explicitly warn about acceptance impact
 - Never modify the review gate artifacts — only read them
 - Never create waiver artifacts — that is a separate governance action
+
+## Schema Compliance
+
+- **spec allows exactly 5 fields**: `subject_diff`, `subject_gate` (optional), `result`, `findings`, `evidence`. Do NOT add `description`, `gate_title`, `gate_class`, `summary`, or any extra field. Schema uses `additionalProperties: false`.
+- **metadata allows exactly 1 field**: `eval_type`. No additional metadata fields. Schema uses `additionalProperties: false`.
+- **Trace refs** MUST be `{target_id: <id>, edge: <edge>}` objects, not bare string IDs.
+- **Approvals** MUST use `{authority_role: <role>, approver: <user>, approved_at: <ISO-8601>}`. Not `{date, decision}`.
+- **Valid trace edges** (10 total): `depends_on`, `derived_from`, `constrains`, `implements`, `proves`, `evaluates`, `produced_by`, `supersedes`, `escalates_to`, `waives`.
+- **Valid authority roles** (5 total): `product_authority`, `technical_authority`, `security_authority`, `release_authority`, `qa_authority`.
+
+### Edge-kind rules for execution_eval
+- Upstream `depends_on` → execution_plan, review_gate, execution_log
+- Upstream `evaluates` → generated_diff (ONLY — not execution_plan or review_gate)
+- Do NOT use `evaluates` for the link to execution_plan or review_gate — use `depends_on`
+  ```yaml
+  # WRONG:
+  upstream:
+    - target_id: EP-feature-001
+      edge: evaluates
+  # RIGHT:
+  upstream:
+    - target_id: EP-feature-001
+      edge: depends_on
+    - target_id: GD-feature-001
+      edge: evaluates
+  ```

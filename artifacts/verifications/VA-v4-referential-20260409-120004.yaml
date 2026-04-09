@@ -1,0 +1,27 @@
+kind: verification_artifact
+schema_version: "0.3"
+id: VA-v4-referential-20260409-120004
+title: "Verification for V4 Referential Integrity phase"
+status: draft
+owners:
+  - daniel-bentes
+created_at: "2026-04-09T12:00:04Z"
+updated_at: "2026-04-09T12:00:04Z"
+trace:
+  upstream:
+    - target_id: BS-v4-referential-20260408-120004
+      edge: proves
+    - target_id: GD-validator-impl-20260409-120000
+      edge: depends_on
+  downstream: []
+approvals: []
+metadata:
+  verification_type: integration_test
+spec:
+  location: "test/integration.test.ts"
+  proves:
+    - BS-v4-referential-20260408-120004
+  execution_result: pass
+  evidence_refs:
+    - "test/integration.test.ts: missing-refs fixture detects BDSK-REF-001 through BDSK-REF-005"
+    - "src/phases/v4-referential.ts: checks EP input resolution, diff mapping completeness, verification coverage"

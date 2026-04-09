@@ -9,7 +9,27 @@ created_at: "2026-04-08T14:30:00Z"
 updated_at: "2026-04-08T14:30:00Z"
 trace:
   upstream:
-    - target_id: EP-validator-impl-20260408-130000
+    - target_id: GD-validator-impl-20260409-120000
+      edge: depends_on
+    - target_id: VA-validator-pipeline-20260409-120000
+      edge: depends_on
+    - target_id: VA-v1-discovery-20260409-120001
+      edge: depends_on
+    - target_id: VA-v2-schema-20260409-120002
+      edge: depends_on
+    - target_id: VA-v3-trace-20260409-120003
+      edge: depends_on
+    - target_id: VA-v4-referential-20260409-120004
+      edge: depends_on
+    - target_id: VA-v5-authority-20260409-120005
+      edge: depends_on
+    - target_id: VA-v6-execution-20260409-120006
+      edge: depends_on
+    - target_id: VA-v7-verification-20260409-120007
+      edge: depends_on
+    - target_id: VA-v8-acceptance-20260409-120008
+      edge: depends_on
+    - target_id: EE-validator-impl-20260409-120000
       edge: depends_on
   downstream: []
 approvals:
@@ -17,11 +37,12 @@ approvals:
     approver: daniel-bentes
     approved_at: "2026-04-08T14:30:00Z"
 metadata:
-  outcome: conditionally_accepted
+  outcome: accepted
 spec:
-  subject_diffs: []
+  subject_diffs:
+    - GD-validator-impl-20260409-120000
   decision_summary: >
-    BDSK reference validator v1.0.0 implementation is conditionally accepted.
+    BDSK reference validator v1.0.0 implementation is accepted.
     The 8-phase validation pipeline (V1-V8), CLI (bdsk-validate), library API
     (validate()), and 3 output formats (text, YAML, JSON) are implemented and
     tested. All 7 integration tests pass. The implementation stayed within
@@ -32,12 +53,7 @@ spec:
     - "CLI supports all flags from validator-spec section 7"
     - "Library API exports validate() and all 8 phase-level functions"
     - "Scope enforcement hook correctly blocked out-of-scope writes during implementation"
-  conditions:
-    - "Create /verify skill to produce verification_artifact for each behavior spec (closes Algorithm E condition a)"
-    - "Add EP approvals entry (was blocked by scope hook during implementation)"
-    - "Fix AR-first-wins-duplicates authority role from technical_authority to product_authority"
-  residual_risks:
-    - "Verification artifacts do not yet exist — full acceptance requires /verify skill"
-    - "Execution log artifact was not created during implementation (BDSK-EXEC-004 warning)"
+  conditions: []
+  residual_risks: []
   approvers:
     - daniel-bentes

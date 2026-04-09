@@ -1,0 +1,40 @@
+kind: generated_diff
+schema_version: "0.3"
+id: GD-lifecycle-skills-20260409-120001
+title: "Generated diff for /verify and /evaluate lifecycle skills"
+status: proposed
+owners:
+  - daniel-bentes
+created_at: "2026-04-09T12:00:01Z"
+updated_at: "2026-04-09T12:00:01Z"
+trace:
+  upstream:
+    - target_id: EP-lifecycle-skills-20260408-143000
+      edge: produced_by
+    - target_id: BS-verify-skill-20260408-140000
+      edge: implements
+    - target_id: BS-evaluate-skill-20260408-140100
+      edge: implements
+  downstream: []
+approvals: []
+metadata:
+  change_scope: bounded
+  summary: "Created /verify and /evaluate skills, upgraded /validate to use full 8-phase TypeScript validator"
+spec:
+  changed_paths:
+    - "skills/verify/SKILL.md"
+    - "skills/evaluate/SKILL.md"
+    - "skills/validate/SKILL.md"
+  operations:
+    - "create skills/verify/SKILL.md"
+    - "create skills/evaluate/SKILL.md"
+    - "modify skills/validate/SKILL.md"
+  rationale:
+    - "Creates lifecycle skills that close BDSK phases 5 (Evaluation) and 6 (Verification)"
+    - "All changes within approved scope (.claude/skills/verify/**, .claude/skills/evaluate/**, .claude/skills/validate/**)"
+  spec_mappings:
+    - "BS-verify-skill-20260408-140000:skills/verify/SKILL.md"
+    - "BS-evaluate-skill-20260408-140100:skills/evaluate/SKILL.md"
+  assumption_mappings: []
+  contract_mappings: []
+  out_of_scope_findings: []

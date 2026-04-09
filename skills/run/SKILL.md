@@ -50,6 +50,7 @@ There are exactly 2 mandatory human gates — reviewing the specification and re
 
 1. Follow the `/plan-execution` skill process: scan approved artifacts, determine scope.
 2. IMPORTANT: Never include these in `out_of_scope_paths`:
+   - `artifacts/diffs/`
    - `artifacts/verifications/`
    - `artifacts/execution-evals/`
    - `artifacts/acceptance/`
@@ -91,11 +92,14 @@ updated_at: <current ISO-8601 timestamp>
 trace:
   upstream:
     - target_id: <execution_plan_id>
-      edge: depends_on
+      edge: produced_by
+    - target_id: <behavior_spec_id>
+      edge: implements
   downstream: []
 approvals: []
 metadata:
   change_scope: bounded
+  summary: <brief one-line summary of what changed>
 spec:
   changed_paths:
     - <each changed file path>
@@ -104,9 +108,7 @@ spec:
   rationale:
     - <brief summary of why these changes were made>
   spec_mappings:
-    - behavior_id: <behavior_spec_id>
-      paths:
-        - <files that implement this spec>
+    - "<behavior_spec_id>:<file_path>"
   assumption_mappings: []
   contract_mappings: []
   out_of_scope_findings: []
@@ -115,6 +117,44 @@ spec:
 4. Save to `artifacts/diffs/<id>.yaml`.
 
 **AUTOMATIC**: No human gate. This is a record of what happened, not a judgment.
+
+### Phase 3.75: RECORD EXECUTION LOG
+
+After recording the diff, auto-generate an `execution_log` artifact that satisfies BDSK-EXEC-004:
+
+```yaml
+kind: execution_log
+schema_version: "0.3"
+id: EL-<plan-slug>-<current ISO-8601 timestamp>
+title: "Execution log for <execution plan title>"
+status: completed
+owners:
+  - <current user>
+created_at: <current ISO-8601 timestamp>
+updated_at: <current ISO-8601 timestamp>
+trace:
+  upstream:
+    - target_id: <execution_plan_id>
+      edge: depends_on
+  downstream: []
+approvals: []
+metadata:
+  executor_type: ai_agent
+spec:
+  consulted_artifacts:
+    - <each artifact ID consulted during implementation>
+  steps:
+    - <brief description of each implementation step taken>
+  emitted_outputs:
+    - <generated_diff_id>
+  surfaced_uncertainties: []
+  stop_conditions_triggered: []
+  final_state: completed
+```
+
+Save to `artifacts/execution-logs/<id>.yaml`.
+
+**AUTOMATIC**: No human gate.
 
 ### Phase 4: EVALUATE
 
@@ -136,7 +176,7 @@ spec:
 
 ### Phase 6: VALIDATE
 
-1. Run the full 8-phase validator: `node "${CLAUDE_PLUGIN_ROOT}/dist/cli.js" . --format text --verbose --schemas-dir "${CLAUDE_PLUGIN_ROOT}/schemas"`
+1. Run the full 8-phase validator: `node "${CLAUDE_PLUGIN_ROOT}/dist/cli.bundle.js" . --format text --verbose --schemas-dir "${CLAUDE_PLUGIN_ROOT}/schemas"` (fall back to `dist/cli.js` if bundle missing)
 2. Display the output.
 3. If conformant (exit 0): proceed automatically.
 4. If non-conformant (exit 1): analyze findings.
@@ -176,3 +216,39 @@ This enables `/run --from <phase>` to resume from where it left off.
   - Leave generated artifacts as `draft` (they can be reused in a future /run)
   - Print the cancellation reason (the log-change.sh hook handles audit logging automatically)
 - The /run skill is a thin orchestrator — it calls existing skill logic, not new logic
+- If a file outside `in_scope_paths` is needed during implementation, STOP and run `/rescope <path>` to amend the plan before proceeding
+
+## Validation Checkpoint (mandatory after every artifact write)
+
+After writing ANY artifact to disk during /run, IMMEDIATELY validate it:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/validate-phase-artifact.sh" "<path-to-written-artifact>"
+```
+
+- **Exit 0**: artifact is schema-valid — proceed to next phase
+- **Exit 1**: read the error output, fix the YAML, rewrite, and re-validate
+- Maximum 3 fix attempts per artifact. After 3 failures, STOP and escalate to the user with all error messages
+- Do NOT proceed to the next phase until every artifact written in the current phase passes validation
+- This applies to: Phase 1 (behavior_spec, assumption_record), Phase 2 (execution_plan), Phase 3.5 (generated_diff), Phase 3.75 (execution_log), Phase 4 (execution_eval), Phase 5 (verification_artifact)
+
+## Schema Compliance for Generated Artifacts
+
+All artifacts generated during /run MUST follow the schema compliance rules in each individual skill. Key rules for artifacts created directly by /run:
+
+### generated_diff
+- **metadata requires 2 fields**: `change_scope` AND `summary`. Both are required.
+- **All spec arrays are arrays of STRINGS** — `spec_mappings`, `assumption_mappings`, `contract_mappings`, `rationale`, `operations`, `changed_paths`, `out_of_scope_findings` are all `array of string`. Do NOT use nested objects.
+- Upstream `produced_by` → execution_plan; `implements` → behavior_spec; `depends_on` → assumption_record, contract_artifact
+- Do NOT use `depends_on` for the link to execution_plan — use `produced_by`
+
+### execution_log
+- **metadata requires 1 field**: `executor_type` (enum: `ai_agent`, `human`, `hybrid`). Optionally `executor_id`.
+- **All spec arrays are arrays of STRINGS** except `consulted_artifacts` and `emitted_outputs` which are arrays of artifact IDs.
+- Upstream `depends_on` → execution_plan (ONLY)
+
+### Universal rules (all artifact types)
+- **Trace refs**: `{target_id: <id>, edge: <edge>}` objects, never bare strings.
+- **Approvals**: `{authority_role, approver, approved_at}` only. Not `{date, decision}`.
+- **Valid edges** (10): `depends_on`, `derived_from`, `constrains`, `implements`, `proves`, `evaluates`, `produced_by`, `supersedes`, `escalates_to`, `waives`.
+- **Valid roles** (5): `product_authority`, `technical_authority`, `security_authority`, `release_authority`, `qa_authority`.

@@ -1,0 +1,27 @@
+kind: verification_artifact
+schema_version: "0.3"
+id: VA-v6-execution-20260409-120006
+title: "Verification for V6 Execution Conformance phase"
+status: draft
+owners:
+  - daniel-bentes
+created_at: "2026-04-09T12:00:06Z"
+updated_at: "2026-04-09T12:00:06Z"
+trace:
+  upstream:
+    - target_id: BS-v6-execution-20260408-120006
+      edge: proves
+    - target_id: GD-validator-impl-20260409-120000
+      edge: depends_on
+  downstream: []
+approvals: []
+metadata:
+  verification_type: integration_test
+spec:
+  location: "test/integration.test.ts"
+  proves:
+    - BS-v6-execution-20260408-120006
+  execution_result: pass
+  evidence_refs:
+    - "test/integration.test.ts: conformant fixture passes V6 execution checks"
+    - "src/phases/v6-execution.ts: validates review gate coverage, execution log completeness"

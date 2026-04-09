@@ -115,6 +115,8 @@ governance_prefixes = [
     'artifacts/execution-evals/',
     'artifacts/acceptance/',
     'artifacts/execution-logs/',
+    'artifacts/diffs/',
+    'artifacts/execution-plans/',
     '.claude/state/active-executions/',
     '.claude/state/change-log.jsonl',
 ]

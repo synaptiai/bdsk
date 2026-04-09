@@ -29,7 +29,22 @@ The user provides a natural language description of the feature: `$ARGUMENTS`
 
 3. **Identify assumptions.** If the behavior depends on decisions or beliefs not established in existing artifacts, note them. Offer to create assumption_records for each via `/assume`.
 
-4. **Write the artifact.** Generate a YAML file following this exact structure:
+4. **Integration Depth Protocol.** If the behavior involves a third-party SDK, external API, or any dependency outside this repository:
+
+   a. **Identify integration points.** List every external call the behavior requires.
+
+   b. **Demand specifics via AskUserQuestion:**
+      - "This behavior involves [SDK/API name]. To prevent integration bugs, I need precise details:"
+        - Exact method signatures (e.g., `client.messages.create({model, max_tokens, messages})`)
+        - Exact state/status enum values (e.g., `'approval-requested'`, not `'approval-required'`)
+        - Exact response shapes (field names, types, nesting)
+        - Error types (exact class names or error codes)
+
+   c. **If the user cannot provide specifics:** Create an `assumption_record` with `impact_level: high`, `area: architecture`, `source_type: undocumented`. Add to the behavior spec's `non_goals`: "Exact API contract for [SDK] deferred — see assumption [ID]".
+
+   d. **If the user CAN provide specifics:** Recommend creating a `contract_artifact` to formalize the API boundary. Link it in the behavior spec's `trace.upstream` with `edge: depends_on`.
+
+5. **Write the artifact.** Generate a YAML file following this exact structure:
 
 ```yaml
 kind: behavior_spec
@@ -71,9 +86,9 @@ spec:
     - <what this behavior explicitly does NOT do>
 ```
 
-5. **Write to disk.** Save to `artifacts/behaviors/<id>.yaml`
+6. **Write to disk.** Save to `artifacts/behaviors/<id>.yaml`
 
-6. **Present for review.** Show the artifact to the user. Explain that running `/approve <id>` is how they approve it.
+7. **Present for review.** Show the artifact to the user. Explain that running `/approve <id>` is how they approve it.
 
 ## Rules
 
@@ -82,3 +97,48 @@ spec:
 - Non-goals are mandatory: explicitly state what this behavior does NOT cover
 - If upstream artifacts exist (assumptions, contracts), link them in trace.upstream
 - Generate a unique ID using the pattern BS-<feature-slug>-<YYYYMMDD-HHMMSS>
+- **YAML safety**: All string values in `given`, `when`, `then`, and `and` arrays MUST be quoted with double quotes. Strings containing colons (`:`), curly braces (`{}`), square brackets (`[]`), or other YAML-special characters will break parsing if left unquoted. Always quote to be safe:
+  ```yaml
+  # WRONG — bare colon breaks YAML:
+  - The section contains 1 item: Michael Reed
+  # RIGHT — quoted string is safe:
+  - "The section contains 1 item: Michael Reed"
+  
+  # WRONG — curly braces interpreted as YAML mapping:
+  - The tool returns { success: false }
+  # RIGHT:
+  - "The tool returns { success: false }"
+  ```
+
+## Schema Compliance
+
+- **given/when/then/and items are plain STRINGS, not objects.** Do NOT generate `{outcome: "...", assertion: "..."}` or `{action: "...", context: "..."}`. Each item is a single quoted string.
+  ```yaml
+  # WRONG — object instead of string:
+  then:
+    - outcome: "artifact is created"
+      assertion: "file exists"
+  # RIGHT — plain string:
+  then:
+    - "artifact is created and file exists"
+  ```
+- **Trace refs** MUST be `{target_id: <id>, edge: <edge>}` objects, not bare string IDs.
+  ```yaml
+  # WRONG:
+  upstream:
+    - BS-login-001
+  # RIGHT:
+  upstream:
+    - target_id: BS-login-001
+      edge: derived_from
+  ```
+- **Approvals** MUST use `{authority_role: <role>, approver: <user>, approved_at: <ISO-8601>}`. Not `{date, decision}` or `{approver, date}`.
+- **Valid trace edges** (10 total): `depends_on`, `derived_from`, `constrains`, `implements`, `proves`, `evaluates`, `produced_by`, `supersedes`, `escalates_to`, `waives`.
+- **Valid authority roles** (5 total): `product_authority`, `technical_authority`, `security_authority`, `release_authority`, `qa_authority`.
+- **No additional fields** in metadata (only `tags` and optionally `domain`) or spec beyond the template. Schema uses `additionalProperties: false`.
+
+### Edge-kind rules for behavior_spec
+- Upstream `derived_from` → behavior_spec, assumption_record
+- Upstream `depends_on` → assumption_record, contract_artifact
+- Do NOT use `depends_on` upstream to another behavior_spec (use `derived_from`)
+- Do NOT add downstream `derived_from` edges (not valid in downstream direction for behavior_spec)

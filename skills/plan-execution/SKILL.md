@@ -29,9 +29,24 @@ Generate an execution plan from approved specs.
    - allowed_operations: what the AI may do (create files, modify files, run tests, etc.)
    - forbidden_operations: what the AI must NOT do
 
-4. **Ask the user** to confirm or adjust the scope via AskUserQuestion.
+4. **Auto-suggest review gates.** Analyze the approved behavior specs for gate triggers:
 
-5. **Write the artifact:**
+   **E2E Testing Gate** — suggest if ANY behavior spec contains UI keywords (page, screen, dialog, modal, form, button, click, navigate, render, display, visible, tooltip, dropdown, sidebar, panel, toast, notification, browser, DOM, CSS, responsive, viewport, component, React, Vue, Angular, Svelte, Next.js):
+   - Propose a blocking review gate for E2E browser testing using the `/gate` skill template
+   - Gate class: `blocking`, subject: `tests`, evaluation method: `human_review`, fail action: `block`
+   - Pass condition: "All UI interactions verified by E2E browser tests"
+
+   **Security Gate** — suggest if specs mention: authentication, authorization, password, token, secret, encrypt, PII, HIPAA, GDPR, credentials, session, permission:
+   - Gate class: `blocking`, subject: `security`, fail action: `block`
+
+   **Performance Gate** — suggest if specs mention: latency, throughput, response time, cache, concurrent, scale, load, benchmark, optimization:
+   - Gate class: `warning`, subject: `other`, fail action: `warn`
+
+   Present gate recommendations during scope review. Include approved gates in `required_inputs.review_gates` and create the gate artifacts via `/gate`.
+
+5. **Ask the user** to confirm or adjust the scope via AskUserQuestion.
+
+6. **Write the artifact:**
 
 ```yaml
 kind: execution_plan
@@ -84,16 +99,16 @@ spec:
     - all changes within approved scope
 ```
 
-6. **Write to disk.** Save to `artifacts/execution-plans/<id>.yaml`
+7. **Write to disk.** Save to `artifacts/execution-plans/<id>.yaml`
 
-7. **Activate scope enforcement.** Write the execution plan ID to `.claude/state/active-executions/<id>.yaml`:
+8. **Activate scope enforcement.** Write the execution plan ID to `.claude/state/active-executions/<id>.yaml`:
 
 ```yaml
 execution_plan_id: <id>
 activated_at: <ISO-8601 timestamp>
 ```
 
-8. **Present for review.** The user changes status from `draft` to `approved` to activate.
+9. **Present for review.** The user changes status from `draft` to `approved` to activate.
 
 ## Rules
 
@@ -101,6 +116,7 @@ activated_at: <ISO-8601 timestamp>
 - in_scope_paths and out_of_scope_paths MUST be explicitly defined
 - The BDSK specification document (`bdsk_specification_v_0.md`) and JSON schemas (`schemas/*.json`) are ALWAYS in out_of_scope_paths unless the execution plan explicitly governs spec changes
 - NEVER put governance output paths in out_of_scope_paths. These are always writable:
+  - `artifacts/diffs/` (created by /run Phase 3.5)
   - `artifacts/verifications/` (created by /verify)
   - `artifacts/execution-evals/` (created by /evaluate)
   - `artifacts/acceptance/` (created by /accept)
@@ -108,3 +124,29 @@ activated_at: <ISO-8601 timestamp>
   The check-scope.sh hook whitelists these paths, but defense-in-depth means not blocking them in the plan either.
 - After approval, the check-scope.sh hook will enforce the boundaries
 - When invoked from /run, the composite skill handles user interaction for scope confirmation
+- When generating `in_scope_paths`, suggest including common config files that implementations frequently need: `*.config.ts`, `*.config.js`, `*.config.mjs`, `package.json`. The user can remove them during scope review
+
+## Schema Compliance
+
+- **metadata allows exactly 1 field**: `change_type`. Do NOT add `description`, `priority`, `estimated_effort`, or other fields. Schema uses `additionalProperties: false`.
+- **completion_criteria items are plain STRINGS**, not objects. Do NOT use `{criterion: "...", metric: "..."}`.
+  ```yaml
+  # WRONG:
+  completion_criteria:
+    - criterion: "all tests pass"
+      metric: "100% green"
+  # RIGHT:
+  completion_criteria:
+    - "all tests pass with 100% green"
+  ```
+- **escalation_conditions items are plain STRINGS**.
+- **required_outputs items are plain STRINGS**.
+- **Trace refs** MUST be `{target_id: <id>, edge: <edge>}` objects, not bare string IDs.
+- **Approvals** MUST use `{authority_role: <role>, approver: <user>, approved_at: <ISO-8601>}`. Not `{date, decision}`.
+- **Valid trace edges** (10 total): `depends_on`, `derived_from`, `constrains`, `implements`, `proves`, `evaluates`, `produced_by`, `supersedes`, `escalates_to`, `waives`.
+- **Valid authority roles** (5 total): `product_authority`, `technical_authority`, `security_authority`, `release_authority`, `qa_authority`.
+
+### Edge-kind rules for execution_plan
+- Upstream `depends_on` → behavior_spec, assumption_record, contract_artifact, codegen_policy, review_gate
+- No other upstream edges are valid for execution_plan
+- Do NOT use `derived_from` or `implements` — those are not valid upstream edges for execution_plan

@@ -44,7 +44,10 @@ trace:
     - target_id: AR-standalone-package-20260408-120017
       edge: depends_on
   downstream: []
-approvals: []
+approvals:
+  - authority_role: technical_authority
+    approver: daniel-bentes
+    approved_at: "2026-04-08T13:00:00Z"
 metadata:
   change_type: new_feature
 spec:

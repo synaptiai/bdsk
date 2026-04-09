@@ -13,6 +13,10 @@ trace:
       edge: depends_on
     - target_id: VA-evaluate-skill-20260408-150001
       edge: depends_on
+    - target_id: GD-lifecycle-skills-20260409-120001
+      edge: depends_on
+    - target_id: EE-lifecycle-skills-20260409-120001
+      edge: depends_on
   downstream: []
 approvals:
   - authority_role: release_authority
@@ -21,7 +25,8 @@ approvals:
 metadata:
   outcome: accepted
 spec:
-  subject_diffs: []
+  subject_diffs:
+    - GD-lifecycle-skills-20260409-120001
   decision_summary: >
     The /verify and /evaluate Claude Code skills are accepted. Both skills
     close the BDSK lifecycle loop: /verify creates verification_artifact
@@ -36,7 +41,6 @@ spec:
     - "All 7 integration tests pass (bun test: 7 pass, 0 fail)"
     - "Skill files created within approved scope (.claude/skills/**)"
   conditions: []
-  residual_risks:
-    - "Execution log artifacts not yet created (BDSK-EXEC-004 warning)"
+  residual_risks: []
   approvers:
     - daniel-bentes

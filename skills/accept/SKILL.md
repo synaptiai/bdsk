@@ -53,7 +53,11 @@ created_at: <current ISO-8601 timestamp>
 updated_at: <current ISO-8601 timestamp>
 trace:
   upstream:
-    - target_id: <execution plan id>
+    - target_id: <generated_diff_id>
+      edge: depends_on
+    - target_id: <each verification_artifact_id>
+      edge: depends_on
+    - target_id: <each execution_eval_id>
       edge: depends_on
   downstream: []
 approvals:
@@ -86,3 +90,17 @@ spec:
 - The user's explicit approval is required only when the outcome is not clean `accepted`
 - If `conditionally_accepted`, conditions array MUST be non-empty
 - When invoked from /run, follows the same auto-accept-on-success principle
+
+## Schema Compliance
+
+- **spec has exactly 6 fields**: `subject_diffs`, `decision_summary`, `reasons`, `conditions`, `residual_risks`, `approvers`. No additional fields. Schema uses `additionalProperties: false`.
+- **metadata has exactly 1 field**: `outcome` (enum: `accepted`, `rejected`, `conditionally_accepted`). No additional fields.
+- **Trace refs** MUST be `{target_id: <id>, edge: <edge>}` objects, not bare string IDs.
+- **Approvals** MUST use `{authority_role: <role>, approver: <user>, approved_at: <ISO-8601>}`. Not `{date, decision}`.
+- **Valid authority roles** (5 total): `product_authority`, `technical_authority`, `security_authority`, `release_authority`, `qa_authority`.
+
+### Edge-kind rules for acceptance_decision
+- Upstream `depends_on` → generated_diff, verification_artifact, execution_eval, waiver_record
+- Do NOT link to execution_plan (not in compatibility matrix for acceptance_decision)
+- Do NOT link to behavior_spec or assumption_record
+- Do NOT use `evaluates` edge — acceptance_decision only uses `depends_on`
