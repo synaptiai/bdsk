@@ -19,13 +19,15 @@ var __toESM = (mod, isNodeMode, target) => {
       return cached;
   }
   target = mod != null ? __create(__getProtoOf(mod)) : {};
-  const to = isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target;
-  for (let key of __getOwnPropNames(mod))
-    if (!__hasOwnProp.call(to, key))
-      __defProp(to, key, {
-        get: __accessProp.bind(mod, key),
-        enumerable: true
-      });
+  const to = isNodeMode || !mod || !mod.__esModule || !__hasOwnProp.call(mod, "default") ? __defProp(target, "default", { value: mod, enumerable: true }) : target;
+  if (mod && typeof mod === "object" || typeof mod === "function") {
+    for (let key of __getOwnPropNames(mod))
+      if (!__hasOwnProp.call(to, key))
+        __defProp(to, key, {
+          get: __accessProp.bind(mod, key),
+          enumerable: true
+        });
+  }
   if (canCache)
     cache.set(mod, to);
   return to;
@@ -34,7 +36,7 @@ var __commonJS = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, 
 var __require = /* @__PURE__ */ createRequire(import.meta.url);
 
 // node_modules/yaml/dist/nodes/identity.js
-var require_identity = __commonJS((exports) => {
+var require_identity = __commonJS(function(exports) {
   var ALIAS = Symbol.for("yaml.alias");
   var DOC = Symbol.for("yaml.document");
   var MAP = Symbol.for("yaml.map");
@@ -88,7 +90,7 @@ var require_identity = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/visit.js
-var require_visit = __commonJS((exports) => {
+var require_visit = __commonJS(function(exports) {
   var identity = require_identity();
   var BREAK = Symbol("break visit");
   var SKIP = Symbol("skip children");
@@ -243,7 +245,7 @@ var require_visit = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/doc/directives.js
-var require_directives = __commonJS((exports) => {
+var require_directives = __commonJS(function(exports) {
   var identity = require_identity();
   var visit = require_visit();
   var escapeChars = {
@@ -395,7 +397,7 @@ var require_directives = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/doc/anchors.js
-var require_anchors = __commonJS((exports) => {
+var require_anchors = __commonJS(function(exports) {
   var identity = require_identity();
   var visit = require_visit();
   function anchorIsValid(anchor) {
@@ -457,7 +459,7 @@ var require_anchors = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/doc/applyReviver.js
-var require_applyReviver = __commonJS((exports) => {
+var require_applyReviver = __commonJS(function(exports) {
   function applyReviver(reviver, obj, key, val) {
     if (val && typeof val === "object") {
       if (Array.isArray(val)) {
@@ -504,7 +506,7 @@ var require_applyReviver = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/nodes/toJS.js
-var require_toJS = __commonJS((exports) => {
+var require_toJS = __commonJS(function(exports) {
   var identity = require_identity();
   function toJS(value, arg, ctx) {
     if (Array.isArray(value))
@@ -514,8 +516,8 @@ var require_toJS = __commonJS((exports) => {
         return value.toJSON(arg, ctx);
       const data = { aliasCount: 0, count: 1, res: undefined };
       ctx.anchors.set(value, data);
-      ctx.onCreate = (res2) => {
-        data.res = res2;
+      ctx.onCreate = (res) => {
+        data.res = res;
         delete ctx.onCreate;
       };
       const res = value.toJSON(arg, ctx);
@@ -531,7 +533,7 @@ var require_toJS = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/nodes/Node.js
-var require_Node = __commonJS((exports) => {
+var require_Node = __commonJS(function(exports) {
   var applyReviver = require_applyReviver();
   var identity = require_identity();
   var toJS = require_toJS();
@@ -559,8 +561,8 @@ var require_Node = __commonJS((exports) => {
       };
       const res = toJS.toJS(this, "", ctx);
       if (typeof onAnchor === "function")
-        for (const { count, res: res2 } of ctx.anchors.values())
-          onAnchor(res2, count);
+        for (const { count, res } of ctx.anchors.values())
+          onAnchor(res, count);
       return typeof reviver === "function" ? applyReviver.applyReviver(reviver, { "": res }, "", res) : res;
     }
   }
@@ -568,7 +570,7 @@ var require_Node = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/nodes/Alias.js
-var require_Alias = __commonJS((exports) => {
+var require_Alias = __commonJS(function(exports) {
   var anchors = require_anchors();
   var visit = require_visit();
   var identity = require_identity();
@@ -612,16 +614,16 @@ var require_Alias = __commonJS((exports) => {
     toJSON(_arg, ctx) {
       if (!ctx)
         return { source: this.source };
-      const { anchors: anchors2, doc, maxAliasCount } = ctx;
+      const { anchors, doc, maxAliasCount } = ctx;
       const source = this.resolve(doc, ctx);
       if (!source) {
         const msg = `Unresolved alias (the anchor must be set before the alias): ${this.source}`;
         throw new ReferenceError(msg);
       }
-      let data = anchors2.get(source);
+      let data = anchors.get(source);
       if (!data) {
         toJS.toJS(source, null, ctx);
-        data = anchors2.get(source);
+        data = anchors.get(source);
       }
       if (data?.res === undefined) {
         const msg = "This should not happen: Alias anchor was not resolved?";
@@ -630,7 +632,7 @@ var require_Alias = __commonJS((exports) => {
       if (maxAliasCount >= 0) {
         data.count += 1;
         if (data.aliasCount === 0)
-          data.aliasCount = getAliasCount(doc, source, anchors2);
+          data.aliasCount = getAliasCount(doc, source, anchors);
         if (data.count * data.aliasCount > maxAliasCount) {
           const msg = "Excessive alias count indicates a resource exhaustion attack";
           throw new ReferenceError(msg);
@@ -652,22 +654,22 @@ var require_Alias = __commonJS((exports) => {
       return src;
     }
   }
-  function getAliasCount(doc, node, anchors2) {
+  function getAliasCount(doc, node, anchors) {
     if (identity.isAlias(node)) {
       const source = node.resolve(doc);
-      const anchor = anchors2 && source && anchors2.get(source);
+      const anchor = anchors && source && anchors.get(source);
       return anchor ? anchor.count * anchor.aliasCount : 0;
     } else if (identity.isCollection(node)) {
       let count = 0;
       for (const item of node.items) {
-        const c = getAliasCount(doc, item, anchors2);
+        const c = getAliasCount(doc, item, anchors);
         if (c > count)
           count = c;
       }
       return count;
     } else if (identity.isPair(node)) {
-      const kc = getAliasCount(doc, node.key, anchors2);
-      const vc = getAliasCount(doc, node.value, anchors2);
+      const kc = getAliasCount(doc, node.key, anchors);
+      const vc = getAliasCount(doc, node.value, anchors);
       return Math.max(kc, vc);
     }
     return 1;
@@ -676,7 +678,7 @@ var require_Alias = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/nodes/Scalar.js
-var require_Scalar = __commonJS((exports) => {
+var require_Scalar = __commonJS(function(exports) {
   var identity = require_identity();
   var Node = require_Node();
   var toJS = require_toJS();
@@ -704,7 +706,7 @@ var require_Scalar = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/doc/createNode.js
-var require_createNode = __commonJS((exports) => {
+var require_createNode = __commonJS(function(exports) {
   var Alias = require_Alias();
   var identity = require_identity();
   var Scalar = require_Scalar();
@@ -752,10 +754,10 @@ var require_createNode = __commonJS((exports) => {
         value = value.toJSON();
       }
       if (!value || typeof value !== "object") {
-        const node2 = new Scalar.Scalar(value);
+        const node = new Scalar.Scalar(value);
         if (ref)
-          ref.node = node2;
-        return node2;
+          ref.node = node;
+        return node;
       }
       tagObj = value instanceof Map ? schema[identity.MAP] : (Symbol.iterator in Object(value)) ? schema[identity.SEQ] : schema[identity.MAP];
     }
@@ -776,7 +778,7 @@ var require_createNode = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/nodes/Collection.js
-var require_Collection = __commonJS((exports) => {
+var require_Collection = __commonJS(function(exports) {
   var createNode = require_createNode();
   var identity = require_identity();
   var Node = require_Node();
@@ -891,7 +893,7 @@ var require_Collection = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/stringify/stringifyComment.js
-var require_stringifyComment = __commonJS((exports) => {
+var require_stringifyComment = __commonJS(function(exports) {
   var stringifyComment = (str) => str.replace(/^(?!$)(?: $)?/gm, "#");
   function indentComment(comment, indent) {
     if (/^\n+$/.test(comment))
@@ -908,7 +910,7 @@ var require_stringifyComment = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/stringify/foldFlowLines.js
-var require_foldFlowLines = __commonJS((exports) => {
+var require_foldFlowLines = __commonJS(function(exports) {
   var FOLD_FLOW = "flow";
   var FOLD_BLOCK = "block";
   var FOLD_QUOTED = "quoted";
@@ -1004,17 +1006,17 @@ var require_foldFlowLines = __commonJS((exports) => {
     if (onFold)
       onFold();
     let res = text.slice(0, folds[0]);
-    for (let i2 = 0;i2 < folds.length; ++i2) {
-      const fold = folds[i2];
-      const end2 = folds[i2 + 1] || text.length;
+    for (let i = 0;i < folds.length; ++i) {
+      const fold = folds[i];
+      const end = folds[i + 1] || text.length;
       if (fold === 0)
         res = `
-${indent}${text.slice(0, end2)}`;
+${indent}${text.slice(0, end)}`;
       else {
         if (mode === FOLD_QUOTED && escapedFolds[fold])
           res += `${text[fold]}\\`;
         res += `
-${indent}${text.slice(fold + 1, end2)}`;
+${indent}${text.slice(fold + 1, end)}`;
       }
     }
     return res;
@@ -1045,7 +1047,7 @@ ${indent}${text.slice(fold + 1, end2)}`;
 });
 
 // node_modules/yaml/dist/stringify/stringifyString.js
-var require_stringifyString = __commonJS((exports) => {
+var require_stringifyString = __commonJS(function(exports) {
   var Scalar = require_Scalar();
   var foldFlowLines = require_foldFlowLines();
   var getFoldOptions = (ctx, isBlock) => ({
@@ -1343,7 +1345,7 @@ ${indent}`);
 });
 
 // node_modules/yaml/dist/stringify/stringify.js
-var require_stringify = __commonJS((exports) => {
+var require_stringify = __commonJS(function(exports) {
   var anchors = require_anchors();
   var identity = require_identity();
   var stringifyComment = require_stringifyComment();
@@ -1464,7 +1466,7 @@ ${ctx.indent}${str}`;
 });
 
 // node_modules/yaml/dist/stringify/stringifyPair.js
-var require_stringifyPair = __commonJS((exports) => {
+var require_stringifyPair = __commonJS(function(exports) {
   var identity = require_identity();
   var Scalar = require_Scalar();
   var stringify = require_stringify();
@@ -1600,7 +1602,7 @@ ${ctx.indent}`;
 });
 
 // node_modules/yaml/dist/log.js
-var require_log = __commonJS((exports) => {
+var require_log = __commonJS(function(exports) {
   var node_process = __require("process");
   function debug(logLevel, ...messages) {
     if (logLevel === "debug")
@@ -1619,7 +1621,7 @@ var require_log = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/yaml-1.1/merge.js
-var require_merge = __commonJS((exports) => {
+var require_merge = __commonJS(function(exports) {
   var identity = require_identity();
   var Scalar = require_Scalar();
   var MERGE_KEY = "<<";
@@ -1650,15 +1652,15 @@ var require_merge = __commonJS((exports) => {
     if (!identity.isMap(source))
       throw new Error("Merge sources must be maps or map aliases");
     const srcMap = source.toJSON(null, ctx, Map);
-    for (const [key, value2] of srcMap) {
+    for (const [key, value] of srcMap) {
       if (map instanceof Map) {
         if (!map.has(key))
-          map.set(key, value2);
+          map.set(key, value);
       } else if (map instanceof Set) {
         map.add(key);
       } else if (!Object.prototype.hasOwnProperty.call(map, key)) {
         Object.defineProperty(map, key, {
-          value: value2,
+          value,
           writable: true,
           enumerable: true,
           configurable: true
@@ -1673,7 +1675,7 @@ var require_merge = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/nodes/addPairToJSMap.js
-var require_addPairToJSMap = __commonJS((exports) => {
+var require_addPairToJSMap = __commonJS(function(exports) {
   var log = require_log();
   var merge = require_merge();
   var stringify = require_stringify();
@@ -1734,7 +1736,7 @@ var require_addPairToJSMap = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/nodes/Pair.js
-var require_Pair = __commonJS((exports) => {
+var require_Pair = __commonJS(function(exports) {
   var createNode = require_createNode();
   var stringifyPair = require_stringifyPair();
   var addPairToJSMap = require_addPairToJSMap();
@@ -1772,14 +1774,14 @@ var require_Pair = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/stringify/stringifyCollection.js
-var require_stringifyCollection = __commonJS((exports) => {
+var require_stringifyCollection = __commonJS(function(exports) {
   var identity = require_identity();
   var stringify = require_stringify();
   var stringifyComment = require_stringifyComment();
   function stringifyCollection(collection, ctx, options) {
     const flow = ctx.inFlow ?? collection.flow;
-    const stringify2 = flow ? stringifyFlowCollection : stringifyBlockCollection;
-    return stringify2(collection, ctx, options);
+    const stringify = flow ? stringifyFlowCollection : stringifyBlockCollection;
+    return stringify(collection, ctx, options);
   }
   function stringifyBlockCollection({ comment, items }, ctx, { blockItemPrefix, flowChars, itemIndent, onChompKeep, onComment }) {
     const { indent, options: { commentString } } = ctx;
@@ -1788,13 +1790,13 @@ var require_stringifyCollection = __commonJS((exports) => {
     const lines = [];
     for (let i = 0;i < items.length; ++i) {
       const item = items[i];
-      let comment2 = null;
+      let comment = null;
       if (identity.isNode(item)) {
         if (!chompKeep && item.spaceBefore)
           lines.push("");
         addCommentBefore(ctx, lines, item.commentBefore, chompKeep);
         if (item.comment)
-          comment2 = item.comment;
+          comment = item.comment;
       } else if (identity.isPair(item)) {
         const ik = identity.isNode(item.key) ? item.key : null;
         if (ik) {
@@ -1804,12 +1806,12 @@ var require_stringifyCollection = __commonJS((exports) => {
         }
       }
       chompKeep = false;
-      let str2 = stringify.stringify(item, itemCtx, () => comment2 = null, () => chompKeep = true);
-      if (comment2)
-        str2 += stringifyComment.lineComment(str2, itemIndent, commentString(comment2));
-      if (chompKeep && comment2)
+      let str = stringify.stringify(item, itemCtx, () => comment = null, () => chompKeep = true);
+      if (comment)
+        str += stringifyComment.lineComment(str, itemIndent, commentString(comment));
+      if (chompKeep && comment)
         chompKeep = false;
-      lines.push(blockItemPrefix + str2);
+      lines.push(blockItemPrefix + str);
     }
     let str;
     if (lines.length === 0) {
@@ -1924,7 +1926,7 @@ ${indent}${end}`;
 });
 
 // node_modules/yaml/dist/nodes/YAMLMap.js
-var require_YAMLMap = __commonJS((exports) => {
+var require_YAMLMap = __commonJS(function(exports) {
   var stringifyCollection = require_stringifyCollection();
   var addPairToJSMap = require_addPairToJSMap();
   var Collection = require_Collection();
@@ -2051,7 +2053,7 @@ var require_YAMLMap = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/common/map.js
-var require_map = __commonJS((exports) => {
+var require_map = __commonJS(function(exports) {
   var identity = require_identity();
   var YAMLMap = require_YAMLMap();
   var map = {
@@ -2059,10 +2061,10 @@ var require_map = __commonJS((exports) => {
     default: true,
     nodeClass: YAMLMap.YAMLMap,
     tag: "tag:yaml.org,2002:map",
-    resolve(map2, onError) {
-      if (!identity.isMap(map2))
+    resolve(map, onError) {
+      if (!identity.isMap(map))
         onError("Expected a mapping for this tag");
-      return map2;
+      return map;
     },
     createNode: (schema, obj, ctx) => YAMLMap.YAMLMap.from(schema, obj, ctx)
   };
@@ -2070,7 +2072,7 @@ var require_map = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/nodes/YAMLSeq.js
-var require_YAMLSeq = __commonJS((exports) => {
+var require_YAMLSeq = __commonJS(function(exports) {
   var createNode = require_createNode();
   var stringifyCollection = require_stringifyCollection();
   var Collection = require_Collection();
@@ -2163,7 +2165,7 @@ var require_YAMLSeq = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/common/seq.js
-var require_seq = __commonJS((exports) => {
+var require_seq = __commonJS(function(exports) {
   var identity = require_identity();
   var YAMLSeq = require_YAMLSeq();
   var seq = {
@@ -2171,10 +2173,10 @@ var require_seq = __commonJS((exports) => {
     default: true,
     nodeClass: YAMLSeq.YAMLSeq,
     tag: "tag:yaml.org,2002:seq",
-    resolve(seq2, onError) {
-      if (!identity.isSeq(seq2))
+    resolve(seq, onError) {
+      if (!identity.isSeq(seq))
         onError("Expected a sequence for this tag");
-      return seq2;
+      return seq;
     },
     createNode: (schema, obj, ctx) => YAMLSeq.YAMLSeq.from(schema, obj, ctx)
   };
@@ -2182,7 +2184,7 @@ var require_seq = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/common/string.js
-var require_string = __commonJS((exports) => {
+var require_string = __commonJS(function(exports) {
   var stringifyString = require_stringifyString();
   var string = {
     identify: (value) => typeof value === "string",
@@ -2198,7 +2200,7 @@ var require_string = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/common/null.js
-var require_null = __commonJS((exports) => {
+var require_null = __commonJS(function(exports) {
   var Scalar = require_Scalar();
   var nullTag = {
     identify: (value) => value == null,
@@ -2213,7 +2215,7 @@ var require_null = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/core/bool.js
-var require_bool = __commonJS((exports) => {
+var require_bool = __commonJS(function(exports) {
   var Scalar = require_Scalar();
   var boolTag = {
     identify: (value) => typeof value === "boolean",
@@ -2234,7 +2236,7 @@ var require_bool = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/stringify/stringifyNumber.js
-var require_stringifyNumber = __commonJS((exports) => {
+var require_stringifyNumber = __commonJS(function(exports) {
   function stringifyNumber({ format, minFractionDigits, tag, value }) {
     if (typeof value === "bigint")
       return String(value);
@@ -2258,7 +2260,7 @@ var require_stringifyNumber = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/core/float.js
-var require_float = __commonJS((exports) => {
+var require_float = __commonJS(function(exports) {
   var Scalar = require_Scalar();
   var stringifyNumber = require_stringifyNumber();
   var floatNaN = {
@@ -2301,7 +2303,7 @@ var require_float = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/core/int.js
-var require_int = __commonJS((exports) => {
+var require_int = __commonJS(function(exports) {
   var stringifyNumber = require_stringifyNumber();
   var intIdentify = (value) => typeof value === "bigint" || Number.isInteger(value);
   var intResolve = (str, offset, radix, { intAsBigInt }) => intAsBigInt ? BigInt(str) : parseInt(str.substring(offset), radix);
@@ -2343,7 +2345,7 @@ var require_int = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/core/schema.js
-var require_schema = __commonJS((exports) => {
+var require_schema = __commonJS(function(exports) {
   var map = require_map();
   var _null = require_null();
   var seq = require_seq();
@@ -2368,7 +2370,7 @@ var require_schema = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/json/schema.js
-var require_schema2 = __commonJS((exports) => {
+var require_schema2 = __commonJS(function(exports) {
   var Scalar = require_Scalar();
   var map = require_map();
   var seq = require_seq();
@@ -2432,7 +2434,7 @@ var require_schema2 = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/yaml-1.1/binary.js
-var require_binary = __commonJS((exports) => {
+var require_binary = __commonJS(function(exports) {
   var node_buffer = __require("buffer");
   var Scalar = require_Scalar();
   var stringifyString = require_stringifyString();
@@ -2487,7 +2489,7 @@ var require_binary = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/yaml-1.1/pairs.js
-var require_pairs = __commonJS((exports) => {
+var require_pairs = __commonJS(function(exports) {
   var identity = require_identity();
   var Pair = require_Pair();
   var Scalar = require_Scalar();
@@ -2520,8 +2522,8 @@ ${cn.comment}` : item.comment;
   }
   function createPairs(schema, iterable, ctx) {
     const { replacer } = ctx;
-    const pairs2 = new YAMLSeq.YAMLSeq(schema);
-    pairs2.tag = "tag:yaml.org,2002:pairs";
+    const pairs = new YAMLSeq.YAMLSeq(schema);
+    pairs.tag = "tag:yaml.org,2002:pairs";
     let i = 0;
     if (iterable && Symbol.iterator in Object(iterable))
       for (let it of iterable) {
@@ -2545,9 +2547,9 @@ ${cn.comment}` : item.comment;
         } else {
           key = it;
         }
-        pairs2.items.push(Pair.createPair(key, value, ctx));
+        pairs.items.push(Pair.createPair(key, value, ctx));
       }
-    return pairs2;
+    return pairs;
   }
   var pairs = {
     collection: "seq",
@@ -2562,7 +2564,7 @@ ${cn.comment}` : item.comment;
 });
 
 // node_modules/yaml/dist/schema/yaml-1.1/omap.js
-var require_omap = __commonJS((exports) => {
+var require_omap = __commonJS(function(exports) {
   var identity = require_identity();
   var toJS = require_toJS();
   var YAMLMap = require_YAMLMap();
@@ -2601,9 +2603,9 @@ var require_omap = __commonJS((exports) => {
     }
     static from(schema, iterable, ctx) {
       const pairs$1 = pairs.createPairs(schema, iterable, ctx);
-      const omap2 = new this;
-      omap2.items = pairs$1.items;
-      return omap2;
+      const omap = new this;
+      omap.items = pairs$1.items;
+      return omap;
     }
   }
   YAMLOMap.tag = "tag:yaml.org,2002:omap";
@@ -2634,7 +2636,7 @@ var require_omap = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/yaml-1.1/bool.js
-var require_bool2 = __commonJS((exports) => {
+var require_bool2 = __commonJS(function(exports) {
   var Scalar = require_Scalar();
   function boolStringify({ value, source }, ctx) {
     const boolObj = value ? trueTag : falseTag;
@@ -2663,7 +2665,7 @@ var require_bool2 = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/yaml-1.1/float.js
-var require_float2 = __commonJS((exports) => {
+var require_float2 = __commonJS(function(exports) {
   var Scalar = require_Scalar();
   var stringifyNumber = require_stringifyNumber();
   var floatNaN = {
@@ -2709,7 +2711,7 @@ var require_float2 = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/yaml-1.1/int.js
-var require_int2 = __commonJS((exports) => {
+var require_int2 = __commonJS(function(exports) {
   var stringifyNumber = require_stringifyNumber();
   var intIdentify = (value) => typeof value === "bigint" || Number.isInteger(value);
   function intResolve(str, offset, radix, { intAsBigInt }) {
@@ -2729,8 +2731,8 @@ var require_int2 = __commonJS((exports) => {
           str = `0x${str}`;
           break;
       }
-      const n2 = BigInt(str);
-      return sign === "-" ? BigInt(-1) * n2 : n2;
+      const n = BigInt(str);
+      return sign === "-" ? BigInt(-1) * n : n;
     }
     const n = parseInt(str, radix);
     return sign === "-" ? -1 * n : n;
@@ -2785,7 +2787,7 @@ var require_int2 = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/yaml-1.1/set.js
-var require_set = __commonJS((exports) => {
+var require_set = __commonJS(function(exports) {
   var identity = require_identity();
   var Pair = require_Pair();
   var YAMLMap = require_YAMLMap();
@@ -2834,14 +2836,14 @@ var require_set = __commonJS((exports) => {
     }
     static from(schema, iterable, ctx) {
       const { replacer } = ctx;
-      const set2 = new this(schema);
+      const set = new this(schema);
       if (iterable && Symbol.iterator in Object(iterable))
         for (let value of iterable) {
           if (typeof replacer === "function")
             value = replacer.call(iterable, value, value);
-          set2.items.push(Pair.createPair(value, null, ctx));
+          set.items.push(Pair.createPair(value, null, ctx));
         }
-      return set2;
+      return set;
     }
   }
   YAMLSet.tag = "tag:yaml.org,2002:set";
@@ -2868,13 +2870,13 @@ var require_set = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/yaml-1.1/timestamp.js
-var require_timestamp = __commonJS((exports) => {
+var require_timestamp = __commonJS(function(exports) {
   var stringifyNumber = require_stringifyNumber();
   function parseSexagesimal(str, asBigInt) {
     const sign = str[0];
     const parts = sign === "-" || sign === "+" ? str.substring(1) : str;
     const num = (n) => asBigInt ? BigInt(n) : Number(n);
-    const res = parts.replace(/_/g, "").split(":").reduce((res2, p) => res2 * num(60) + num(p), num(0));
+    const res = parts.replace(/_/g, "").split(":").reduce((res, p) => res * num(60) + num(p), num(0));
     return sign === "-" ? num(-1) * res : res;
   }
   function stringifySexagesimal(node) {
@@ -2950,7 +2952,7 @@ var require_timestamp = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/yaml-1.1/schema.js
-var require_schema3 = __commonJS((exports) => {
+var require_schema3 = __commonJS(function(exports) {
   var map = require_map();
   var _null = require_null();
   var seq = require_seq();
@@ -2991,7 +2993,7 @@ var require_schema3 = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/tags.js
-var require_tags = __commonJS((exports) => {
+var require_tags = __commonJS(function(exports) {
   var map = require_map();
   var _null = require_null();
   var seq = require_seq();
@@ -3065,16 +3067,16 @@ var require_tags = __commonJS((exports) => {
     }
     if (addMergeTag)
       tags = tags.concat(merge.merge);
-    return tags.reduce((tags2, tag) => {
+    return tags.reduce((tags, tag) => {
       const tagObj = typeof tag === "string" ? tagsByName[tag] : tag;
       if (!tagObj) {
         const tagName = JSON.stringify(tag);
         const keys = Object.keys(tagsByName).map((key) => JSON.stringify(key)).join(", ");
         throw new Error(`Unknown custom tag ${tagName}; use one of ${keys}`);
       }
-      if (!tags2.includes(tagObj))
-        tags2.push(tagObj);
-      return tags2;
+      if (!tags.includes(tagObj))
+        tags.push(tagObj);
+      return tags;
     }, []);
   }
   exports.coreKnownTags = coreKnownTags;
@@ -3082,7 +3084,7 @@ var require_tags = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/schema/Schema.js
-var require_Schema = __commonJS((exports) => {
+var require_Schema = __commonJS(function(exports) {
   var identity = require_identity();
   var map = require_map();
   var seq = require_seq();
@@ -3112,7 +3114,7 @@ var require_Schema = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/stringify/stringifyDocument.js
-var require_stringifyDocument = __commonJS((exports) => {
+var require_stringifyDocument = __commonJS(function(exports) {
   var identity = require_identity();
   var stringify = require_stringify();
   var stringifyComment = require_stringifyComment();
@@ -3192,7 +3194,7 @@ var require_stringifyDocument = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/doc/Document.js
-var require_Document = __commonJS((exports) => {
+var require_Document = __commonJS(function(exports) {
   var Alias = require_Alias();
   var Collection = require_Collection();
   var identity = require_identity();
@@ -3401,8 +3403,8 @@ var require_Document = __commonJS((exports) => {
       };
       const res = toJS.toJS(this.contents, jsonArg ?? "", ctx);
       if (typeof onAnchor === "function")
-        for (const { count, res: res2 } of ctx.anchors.values())
-          onAnchor(res2, count);
+        for (const { count, res } of ctx.anchors.values())
+          onAnchor(res, count);
       return typeof reviver === "function" ? applyReviver.applyReviver(reviver, { "": res }, "", res) : res;
     }
     toJSON(jsonArg, onAnchor) {
@@ -3427,7 +3429,7 @@ var require_Document = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/errors.js
-var require_errors = __commonJS((exports) => {
+var require_errors = __commonJS(function(exports) {
   class YAMLError extends Error {
     constructor(name, pos, code, message) {
       super();
@@ -3492,7 +3494,7 @@ ${pointer}
 });
 
 // node_modules/yaml/dist/compose/resolve-props.js
-var require_resolve_props = __commonJS((exports) => {
+var require_resolve_props = __commonJS(function(exports) {
   function resolveProps(tokens, { flow, indicator, next, offset, onError, parentIndent, startOnNewline }) {
     let spaceBefore = false;
     let atNewline = startOnNewline;
@@ -3622,7 +3624,7 @@ var require_resolve_props = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/compose/util-contains-newline.js
-var require_util_contains_newline = __commonJS((exports) => {
+var require_util_contains_newline = __commonJS(function(exports) {
   function containsNewline(key) {
     if (!key)
       return null;
@@ -3662,7 +3664,7 @@ var require_util_contains_newline = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/compose/util-flow-indent-check.js
-var require_util_flow_indent_check = __commonJS((exports) => {
+var require_util_flow_indent_check = __commonJS(function(exports) {
   var utilContainsNewline = require_util_contains_newline();
   function flowIndentCheck(indent, fc, onError) {
     if (fc?.type === "flow-collection") {
@@ -3677,7 +3679,7 @@ var require_util_flow_indent_check = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/compose/util-map-includes.js
-var require_util_map_includes = __commonJS((exports) => {
+var require_util_map_includes = __commonJS(function(exports) {
   var identity = require_identity();
   function mapIncludes(ctx, items, search) {
     const { uniqueKeys } = ctx.options;
@@ -3690,7 +3692,7 @@ var require_util_map_includes = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/compose/resolve-block-map.js
-var require_resolve_block_map = __commonJS((exports) => {
+var require_resolve_block_map = __commonJS(function(exports) {
   var Pair = require_Pair();
   var YAMLMap = require_YAMLMap();
   var resolveProps = require_resolve_props();
@@ -3797,7 +3799,7 @@ var require_resolve_block_map = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/compose/resolve-block-seq.js
-var require_resolve_block_seq = __commonJS((exports) => {
+var require_resolve_block_seq = __commonJS(function(exports) {
   var YAMLSeq = require_YAMLSeq();
   var resolveProps = require_resolve_props();
   var utilFlowIndentCheck = require_util_flow_indent_check();
@@ -3845,7 +3847,7 @@ var require_resolve_block_seq = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/compose/resolve-end.js
-var require_resolve_end = __commonJS((exports) => {
+var require_resolve_end = __commonJS(function(exports) {
   function resolveEnd(end, offset, reqSpace, onError) {
     let comment = "";
     if (end) {
@@ -3885,7 +3887,7 @@ var require_resolve_end = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/compose/resolve-flow-collection.js
-var require_resolve_flow_collection = __commonJS((exports) => {
+var require_resolve_flow_collection = __commonJS(function(exports) {
   var identity = require_identity();
   var Pair = require_Pair();
   var YAMLMap = require_YAMLMap();
@@ -4076,7 +4078,7 @@ var require_resolve_flow_collection = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/compose/compose-collection.js
-var require_compose_collection = __commonJS((exports) => {
+var require_compose_collection = __commonJS(function(exports) {
   var identity = require_identity();
   var Scalar = require_Scalar();
   var YAMLMap = require_YAMLMap();
@@ -4138,7 +4140,7 @@ var require_compose_collection = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/compose/resolve-block-scalar.js
-var require_resolve_block_scalar = __commonJS((exports) => {
+var require_resolve_block_scalar = __commonJS(function(exports) {
   var Scalar = require_Scalar();
   function resolveBlockScalar(ctx, scalar, onError) {
     const start = scalar.offset;
@@ -4156,12 +4158,12 @@ var require_resolve_block_scalar = __commonJS((exports) => {
         break;
     }
     if (chompStart === 0) {
-      const value2 = header.chomp === "+" && lines.length > 0 ? `
+      const value = header.chomp === "+" && lines.length > 0 ? `
 `.repeat(Math.max(1, lines.length - 1)) : "";
-      let end2 = start + header.length;
+      let end = start + header.length;
       if (scalar.source)
-        end2 += scalar.source.length;
-      return { value: value2, type, comment: header.comment, range: [start, end2, end2] };
+        end += scalar.source.length;
+      return { value, type, comment: header.comment, range: [start, end, end] };
     }
     let trimIndent = scalar.indent + header.indent;
     let offset = scalar.offset + header.length;
@@ -4331,7 +4333,7 @@ var require_resolve_block_scalar = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/compose/resolve-flow-scalar.js
-var require_resolve_flow_scalar = __commonJS((exports) => {
+var require_resolve_flow_scalar = __commonJS(function(exports) {
   var Scalar = require_Scalar();
   var resolveEnd = require_resolve_end();
   function resolveFlowScalar(scalar, strict, onError) {
@@ -4547,7 +4549,7 @@ var require_resolve_flow_scalar = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/compose/compose-scalar.js
-var require_compose_scalar = __commonJS((exports) => {
+var require_compose_scalar = __commonJS(function(exports) {
   var identity = require_identity();
   var Scalar = require_Scalar();
   var resolveBlockScalar = require_resolve_block_scalar();
@@ -4609,9 +4611,9 @@ var require_compose_scalar = __commonJS((exports) => {
     return schema[identity.SCALAR];
   }
   function findScalarTagByTest({ atKey, directives, schema }, value, token, onError) {
-    const tag = schema.tags.find((tag2) => (tag2.default === true || atKey && tag2.default === "key") && tag2.test?.test(value)) || schema[identity.SCALAR];
+    const tag = schema.tags.find((tag) => (tag.default === true || atKey && tag.default === "key") && tag.test?.test(value)) || schema[identity.SCALAR];
     if (schema.compat) {
-      const compat = schema.compat.find((tag2) => tag2.default && tag2.test?.test(value)) ?? schema[identity.SCALAR];
+      const compat = schema.compat.find((tag) => tag.default && tag.test?.test(value)) ?? schema[identity.SCALAR];
       if (tag.tag !== compat.tag) {
         const ts = directives.tagString(tag.tag);
         const cs = directives.tagString(compat.tag);
@@ -4625,7 +4627,7 @@ var require_compose_scalar = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/compose/util-empty-scalar-position.js
-var require_util_empty_scalar_position = __commonJS((exports) => {
+var require_util_empty_scalar_position = __commonJS(function(exports) {
   function emptyScalarPosition(offset, before, pos) {
     if (before) {
       pos ?? (pos = before.length);
@@ -4652,7 +4654,7 @@ var require_util_empty_scalar_position = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/compose/compose-node.js
-var require_compose_node = __commonJS((exports) => {
+var require_compose_node = __commonJS(function(exports) {
   var Alias = require_Alias();
   var identity = require_identity();
   var composeCollection = require_compose_collection();
@@ -4755,7 +4757,7 @@ var require_compose_node = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/compose/compose-doc.js
-var require_compose_doc = __commonJS((exports) => {
+var require_compose_doc = __commonJS(function(exports) {
   var Document = require_Document();
   var composeNode = require_compose_node();
   var resolveEnd = require_resolve_end();
@@ -4795,7 +4797,7 @@ var require_compose_doc = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/compose/composer.js
-var require_composer = __commonJS((exports) => {
+var require_composer = __commonJS(function(exports) {
   var node_process = __require("process");
   var directives = require_directives();
   var Document = require_Document();
@@ -4984,7 +4986,7 @@ ${end.comment}` : end.comment;
 });
 
 // node_modules/yaml/dist/parse/cst-scalar.js
-var require_cst_scalar = __commonJS((exports) => {
+var require_cst_scalar = __commonJS(function(exports) {
   var resolveBlockScalar = require_resolve_block_scalar();
   var resolveFlowScalar = require_resolve_flow_scalar();
   var errors = require_errors();
@@ -5174,7 +5176,7 @@ var require_cst_scalar = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/parse/cst-stringify.js
-var require_cst_stringify = __commonJS((exports) => {
+var require_cst_stringify = __commonJS(function(exports) {
   var stringify = (cst) => ("type" in cst) ? stringifyToken(cst) : stringifyItem(cst);
   function stringifyToken(token) {
     switch (token.type) {
@@ -5232,7 +5234,7 @@ var require_cst_stringify = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/parse/cst-visit.js
-var require_cst_visit = __commonJS((exports) => {
+var require_cst_visit = __commonJS(function(exports) {
   var BREAK = Symbol("break visit");
   var SKIP = Symbol("skip children");
   var REMOVE = Symbol("remove item");
@@ -5291,7 +5293,7 @@ var require_cst_visit = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/parse/cst.js
-var require_cst = __commonJS((exports) => {
+var require_cst = __commonJS(function(exports) {
   var cstScalar = require_cst_scalar();
   var cstStringify = require_cst_stringify();
   var cstVisit = require_cst_visit();
@@ -5392,7 +5394,7 @@ var require_cst = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/parse/lexer.js
-var require_lexer = __commonJS((exports) => {
+var require_lexer = __commonJS(function(exports) {
   var cst = require_cst();
   function isEmpty(ch) {
     switch (ch) {
@@ -5765,18 +5767,18 @@ var require_lexer = __commonJS((exports) => {
       let indent = 0;
       let ch;
       loop:
-        for (let i2 = this.pos;ch = this.buffer[i2]; ++i2) {
+        for (let i = this.pos;ch = this.buffer[i]; ++i) {
           switch (ch) {
             case " ":
               indent += 1;
               break;
             case `
 `:
-              nl = i2;
+              nl = i;
               indent = 0;
               break;
             case "\r": {
-              const next = this.buffer[i2 + 1];
+              const next = this.buffer[i + 1];
               if (!next && !this.atEnd)
                 return this.setNext("block-scalar");
               if (next === `
@@ -5819,16 +5821,16 @@ var require_lexer = __commonJS((exports) => {
         nl = i - 1;
       } else if (!this.blockScalarKeep) {
         do {
-          let i2 = nl - 1;
-          let ch2 = this.buffer[i2];
-          if (ch2 === "\r")
-            ch2 = this.buffer[--i2];
-          const lastChar = i2;
-          while (ch2 === " ")
-            ch2 = this.buffer[--i2];
-          if (ch2 === `
-` && i2 >= this.pos && i2 + 1 + indent > lastChar)
-            nl = i2;
+          let i = nl - 1;
+          let ch = this.buffer[i];
+          if (ch === "\r")
+            ch = this.buffer[--i];
+          const lastChar = i;
+          while (ch === " ")
+            ch = this.buffer[--i];
+          if (ch === `
+` && i >= this.pos && i + 1 + indent > lastChar)
+            nl = i;
           else
             break;
         } while (true);
@@ -5978,7 +5980,7 @@ var require_lexer = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/parse/line-counter.js
-var require_line_counter = __commonJS((exports) => {
+var require_line_counter = __commonJS(function(exports) {
   class LineCounter {
     constructor() {
       this.lineStarts = [];
@@ -6006,7 +6008,7 @@ var require_line_counter = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/parse/parser.js
-var require_parser = __commonJS((exports) => {
+var require_parser = __commonJS(function(exports) {
   var node_process = __require("process");
   var cst = require_cst();
   var lexer = require_lexer();
@@ -6497,12 +6499,12 @@ var require_parser = __commonJS((exports) => {
                 if (includesToken(it.start, "newline")) {
                   Object.assign(it, { key: null, sep: [this.sourceToken] });
                 } else {
-                  const start2 = getFirstKeyStartProps(it.start);
+                  const start = getFirstKeyStartProps(it.start);
                   this.stack.push({
                     type: "block-map",
                     offset: this.offset,
                     indent: this.indent,
-                    items: [{ start: start2, key: null, sep: [this.sourceToken] }]
+                    items: [{ start, key: null, sep: [this.sourceToken] }]
                   });
                 }
               } else if (it.value) {
@@ -6515,7 +6517,7 @@ var require_parser = __commonJS((exports) => {
                   items: [{ start, key: null, sep: [this.sourceToken] }]
                 });
               } else if (isFlowToken(it.key) && !includesToken(it.sep, "newline")) {
-                const start2 = getFirstKeyStartProps(it.start);
+                const start = getFirstKeyStartProps(it.start);
                 const key = it.key;
                 const sep = it.sep;
                 sep.push(this.sourceToken);
@@ -6525,7 +6527,7 @@ var require_parser = __commonJS((exports) => {
                   type: "block-map",
                   offset: this.offset,
                   indent: this.indent,
-                  items: [{ start: start2, key, sep }]
+                  items: [{ start, key, sep }]
                 });
               } else if (start.length > 0) {
                 it.sep = it.sep.concat(start, this.sourceToken);
@@ -6855,7 +6857,7 @@ var require_parser = __commonJS((exports) => {
 });
 
 // node_modules/yaml/dist/public-api.js
-var require_public_api = __commonJS((exports) => {
+var require_public_api = __commonJS(function(exports) {
   var composer = require_composer();
   var Document = require_Document();
   var errors = require_errors();
@@ -6869,22 +6871,22 @@ var require_public_api = __commonJS((exports) => {
     return { lineCounter: lineCounter$1, prettyErrors };
   }
   function parseAllDocuments(source, options = {}) {
-    const { lineCounter: lineCounter2, prettyErrors } = parseOptions(options);
-    const parser$1 = new parser.Parser(lineCounter2?.addNewLine);
+    const { lineCounter, prettyErrors } = parseOptions(options);
+    const parser$1 = new parser.Parser(lineCounter?.addNewLine);
     const composer$1 = new composer.Composer(options);
     const docs = Array.from(composer$1.compose(parser$1.parse(source)));
-    if (prettyErrors && lineCounter2)
+    if (prettyErrors && lineCounter)
       for (const doc of docs) {
-        doc.errors.forEach(errors.prettifyError(source, lineCounter2));
-        doc.warnings.forEach(errors.prettifyError(source, lineCounter2));
+        doc.errors.forEach(errors.prettifyError(source, lineCounter));
+        doc.warnings.forEach(errors.prettifyError(source, lineCounter));
       }
     if (docs.length > 0)
       return docs;
     return Object.assign([], { empty: true }, composer$1.streamInfo());
   }
   function parseDocument(source, options = {}) {
-    const { lineCounter: lineCounter2, prettyErrors } = parseOptions(options);
-    const parser$1 = new parser.Parser(lineCounter2?.addNewLine);
+    const { lineCounter, prettyErrors } = parseOptions(options);
+    const parser$1 = new parser.Parser(lineCounter?.addNewLine);
     const composer$1 = new composer.Composer(options);
     let doc = null;
     for (const _doc of composer$1.compose(parser$1.parse(source), true, source.length)) {
@@ -6895,9 +6897,9 @@ var require_public_api = __commonJS((exports) => {
         break;
       }
     }
-    if (prettyErrors && lineCounter2) {
-      doc.errors.forEach(errors.prettifyError(source, lineCounter2));
-      doc.warnings.forEach(errors.prettifyError(source, lineCounter2));
+    if (prettyErrors && lineCounter) {
+      doc.errors.forEach(errors.prettifyError(source, lineCounter));
+      doc.warnings.forEach(errors.prettifyError(source, lineCounter));
     }
     return doc;
   }
@@ -6949,7 +6951,7 @@ var require_public_api = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/compile/codegen/code.js
-var require_code = __commonJS((exports) => {
+var require_code = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.regexpCode = exports.getEsmExportName = exports.getProperty = exports.safeStringify = exports.stringify = exports.strConcat = exports.addCodeArg = exports.str = exports._ = exports.nil = exports._Code = exports.Name = exports.IDENTIFIER = exports._CodeOrName = undefined;
 
@@ -7103,7 +7105,7 @@ var require_code = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/compile/codegen/scope.js
-var require_scope = __commonJS((exports) => {
+var require_scope = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.ValueScope = exports.ValueScopeName = exports.Scope = exports.varKinds = exports.UsedValueState = undefined;
   var code_1 = require_code();
@@ -7115,9 +7117,9 @@ var require_scope = __commonJS((exports) => {
     }
   }
   var UsedValueState;
-  (function(UsedValueState2) {
-    UsedValueState2[UsedValueState2["Started"] = 0] = "Started";
-    UsedValueState2[UsedValueState2["Completed"] = 1] = "Completed";
+  (function(UsedValueState) {
+    UsedValueState[UsedValueState["Started"] = 0] = "Started";
+    UsedValueState[UsedValueState["Completed"] = 1] = "Completed";
   })(UsedValueState || (exports.UsedValueState = UsedValueState = {}));
   exports.varKinds = {
     const: new code_1.Name("const"),
@@ -7249,7 +7251,7 @@ var require_scope = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/compile/codegen/index.js
-var require_codegen = __commonJS((exports) => {
+var require_codegen = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.or = exports.and = exports.not = exports.CodeGen = exports.operators = exports.varKinds = exports.ValueScopeName = exports.ValueScope = exports.Scope = exports.Name = exports.regexpCode = exports.stringify = exports.getProperty = exports.nil = exports.strConcat = exports.str = exports._ = undefined;
   var code_1 = require_code();
@@ -7959,7 +7961,7 @@ var require_codegen = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/compile/util.js
-var require_util = __commonJS((exports) => {
+var require_util = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.checkStrictMode = exports.getErrorPath = exports.Type = exports.useFunc = exports.setEvaluated = exports.evaluatedPropsToName = exports.mergeEvaluated = exports.eachItem = exports.unescapeJsonPointer = exports.escapeJsonPointer = exports.escapeFragment = exports.unescapeFragment = exports.schemaRefOrVal = exports.schemaHasRulesButRef = exports.schemaHasRules = exports.checkUnknownRules = exports.alwaysValidSchema = exports.toHash = undefined;
   var codegen_1 = require_codegen();
@@ -8099,9 +8101,9 @@ var require_util = __commonJS((exports) => {
   }
   exports.useFunc = useFunc;
   var Type;
-  (function(Type2) {
-    Type2[Type2["Num"] = 0] = "Num";
-    Type2[Type2["Str"] = 1] = "Str";
+  (function(Type) {
+    Type[Type["Num"] = 0] = "Num";
+    Type[Type["Str"] = 1] = "Str";
   })(Type || (exports.Type = Type = {}));
   function getErrorPath(dataProp, dataPropType, jsPropertySyntax) {
     if (dataProp instanceof codegen_1.Name) {
@@ -8123,7 +8125,7 @@ var require_util = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/compile/names.js
-var require_names = __commonJS((exports) => {
+var require_names = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var codegen_1 = require_codegen();
   var names = {
@@ -8148,7 +8150,7 @@ var require_names = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/compile/errors.js
-var require_errors2 = __commonJS((exports) => {
+var require_errors2 = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.extendErrors = exports.resetErrorsCount = exports.reportExtraError = exports.reportError = exports.keyword$DataError = exports.keywordError = undefined;
   var codegen_1 = require_codegen();
@@ -8266,7 +8268,7 @@ var require_errors2 = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/compile/validate/boolSchema.js
-var require_boolSchema = __commonJS((exports) => {
+var require_boolSchema = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.boolOrEmptySchema = exports.topBoolOrEmptySchema = undefined;
   var errors_1 = require_errors2();
@@ -8314,7 +8316,7 @@ var require_boolSchema = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/compile/rules.js
-var require_rules = __commonJS((exports) => {
+var require_rules = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.getRules = exports.isJSONType = undefined;
   var _jsonTypes = ["string", "number", "integer", "boolean", "null", "object", "array"];
@@ -8342,7 +8344,7 @@ var require_rules = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/compile/validate/applicability.js
-var require_applicability = __commonJS((exports) => {
+var require_applicability = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.shouldUseRule = exports.shouldUseGroup = exports.schemaHasRulesForType = undefined;
   function schemaHasRulesForType({ schema, self }, type) {
@@ -8362,7 +8364,7 @@ var require_applicability = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/compile/validate/dataType.js
-var require_dataType = __commonJS((exports) => {
+var require_dataType = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.reportTypeError = exports.checkDataTypes = exports.checkDataType = exports.coerceAndCheckDataType = exports.getJSONTypes = exports.getSchemaTypes = exports.DataType = undefined;
   var rules_1 = require_rules();
@@ -8371,9 +8373,9 @@ var require_dataType = __commonJS((exports) => {
   var codegen_1 = require_codegen();
   var util_1 = require_util();
   var DataType;
-  (function(DataType2) {
-    DataType2[DataType2["Correct"] = 0] = "Correct";
-    DataType2[DataType2["Wrong"] = 1] = "Wrong";
+  (function(DataType) {
+    DataType[DataType["Correct"] = 0] = "Correct";
+    DataType[DataType["Wrong"] = 1] = "Wrong";
   })(DataType || (exports.DataType = DataType = {}));
   function getSchemaTypes(schema) {
     const types = getJSONTypes(schema.type);
@@ -8543,7 +8545,7 @@ var require_dataType = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/compile/validate/defaults.js
-var require_defaults = __commonJS((exports) => {
+var require_defaults = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.assignDefaults = undefined;
   var codegen_1 = require_codegen();
@@ -8577,7 +8579,7 @@ var require_defaults = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/code.js
-var require_code2 = __commonJS((exports) => {
+var require_code2 = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.validateUnion = exports.validateArray = exports.usePattern = exports.callValidateCode = exports.schemaProperties = exports.allSchemaProperties = exports.noPropertyInData = exports.propertyInData = exports.isOwnProperty = exports.hasPropFunc = exports.reportMissingProp = exports.checkMissingProp = exports.checkReportMissingProp = undefined;
   var codegen_1 = require_codegen();
@@ -8706,7 +8708,7 @@ var require_code2 = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/compile/validate/keyword.js
-var require_keyword = __commonJS((exports) => {
+var require_keyword = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.validateKeywordUsage = exports.validSchemaType = exports.funcKeywordCode = exports.macroKeywordCode = undefined;
   var codegen_1 = require_codegen();
@@ -8768,9 +8770,9 @@ var require_keyword = __commonJS((exports) => {
       const passSchema = !(("compile" in def) && !$data || def.schema === false);
       gen.assign(valid, (0, codegen_1._)`${_await}${(0, code_1.callValidateCode)(cxt, validateRef, passCxt, passSchema)}`, def.modifying);
     }
-    function reportErrs(errors2) {
-      var _a2;
-      gen.if((0, codegen_1.not)((_a2 = def.valid) !== null && _a2 !== undefined ? _a2 : valid), errors2);
+    function reportErrs(errors) {
+      var _a;
+      gen.if((0, codegen_1.not)((_a = def.valid) !== null && _a !== undefined ? _a : valid), errors);
     }
   }
   exports.funcKeywordCode = funcKeywordCode;
@@ -8821,7 +8823,7 @@ var require_keyword = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/compile/validate/subschema.js
-var require_subschema = __commonJS((exports) => {
+var require_subschema = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.extendSubschemaMode = exports.extendSubschemaData = exports.getSubschema = undefined;
   var codegen_1 = require_codegen();
@@ -8901,7 +8903,7 @@ var require_subschema = __commonJS((exports) => {
 });
 
 // node_modules/fast-deep-equal/index.js
-var require_fast_deep_equal = __commonJS((exports, module) => {
+var require_fast_deep_equal = __commonJS(function(exports, module) {
   module.exports = function equal(a, b) {
     if (a === b)
       return true;
@@ -8943,7 +8945,7 @@ var require_fast_deep_equal = __commonJS((exports, module) => {
 });
 
 // node_modules/json-schema-traverse/index.js
-var require_json_schema_traverse = __commonJS((exports, module) => {
+var require_json_schema_traverse = __commonJS(function(exports, module) {
   var traverse = module.exports = function(schema, opts, cb) {
     if (typeof opts == "function") {
       cb = opts;
@@ -9026,7 +9028,7 @@ var require_json_schema_traverse = __commonJS((exports, module) => {
 });
 
 // node_modules/ajv/dist/compile/resolve.js
-var require_resolve = __commonJS((exports) => {
+var require_resolve = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.getSchemaRefs = exports.resolveUrl = exports.normalizeId = exports._getFullPath = exports.getFullPath = exports.inlineRef = undefined;
   var util_1 = require_util();
@@ -9179,7 +9181,7 @@ var require_resolve = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/compile/validate/index.js
-var require_validate = __commonJS((exports) => {
+var require_validate = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.getData = exports.KeywordCxt = exports.validateFunctionCode = undefined;
   var boolSchema_1 = require_boolSchema();
@@ -9684,13 +9686,13 @@ var require_validate = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/runtime/validation_error.js
-var require_validation_error = __commonJS((exports) => {
+var require_validation_error = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
 
   class ValidationError extends Error {
-    constructor(errors2) {
+    constructor(errors) {
       super("validation failed");
-      this.errors = errors2;
+      this.errors = errors;
       this.ajv = this.validation = true;
     }
   }
@@ -9698,7 +9700,7 @@ var require_validation_error = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/compile/ref_error.js
-var require_ref_error = __commonJS((exports) => {
+var require_ref_error = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var resolve_1 = require_resolve();
 
@@ -9713,7 +9715,7 @@ var require_ref_error = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/compile/index.js
-var require_compile = __commonJS((exports) => {
+var require_compile = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.resolveSchema = exports.getCompilingSchema = exports.resolveRef = exports.compileSchema = exports.SchemaEnv = undefined;
   var codegen_1 = require_codegen();
@@ -9934,7 +9936,7 @@ var require_compile = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/refs/data.json
-var require_data = __commonJS((exports, module) => {
+var require_data = __commonJS(function(exports, module) {
   module.exports = {
     $id: "https://raw.githubusercontent.com/ajv-validator/ajv/master/lib/refs/data.json#",
     description: "Meta-schema for $data reference (JSON AnySchema extension proposal)",
@@ -9951,9 +9953,31 @@ var require_data = __commonJS((exports, module) => {
 });
 
 // node_modules/fast-uri/lib/utils.js
-var require_utils = __commonJS((exports, module) => {
+var require_utils = __commonJS(function(exports, module) {
   var isUUID = RegExp.prototype.test.bind(/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu);
   var isIPv4 = RegExp.prototype.test.bind(/^(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)$/u);
+  var isPort = RegExp.prototype.test.bind(/^\d*$/u);
+  var isHexPair = RegExp.prototype.test.bind(/^[\da-f]{2}$/iu);
+  var isUnreserved = RegExp.prototype.test.bind(/^[\da-z\-._~]$/iu);
+  var isPathCharacter = RegExp.prototype.test.bind(/^[A-Za-z0-9\-._~!$&'()*+,;=:@/]$/u);
+  var isQueryFragmentCharacter = RegExp.prototype.test.bind(/^[A-Za-z0-9\-._~!$&'()*+,;=:@/?]$/u);
+  var isUserinfoCharacter = RegExp.prototype.test.bind(/^[A-Za-z0-9\-._~!$&'()*+,;=:]$/u);
+  var BYTE_HEX = new Array(256);
+  {
+    const HEX_DIGITS = "0123456789ABCDEF";
+    for (let i = 0;i < 256; i++) {
+      BYTE_HEX[i] = "%" + HEX_DIGITS[i >> 4] + HEX_DIGITS[i & 15];
+    }
+  }
+  function percentEncodeNonAscii(cp) {
+    if (cp < 2048) {
+      return BYTE_HEX[192 | cp >> 6] + BYTE_HEX[128 | cp & 63];
+    }
+    if (cp < 65536) {
+      return BYTE_HEX[224 | cp >> 12] + BYTE_HEX[128 | cp >> 6 & 63] + BYTE_HEX[128 | cp & 63];
+    }
+    return BYTE_HEX[240 | cp >> 18] + BYTE_HEX[128 | cp >> 12 & 63] + BYTE_HEX[128 | cp >> 6 & 63] + BYTE_HEX[128 | cp & 63];
+  }
   function stringArrayToHexStripped(input) {
     let acc = "";
     let code = 0;
@@ -9978,91 +10002,122 @@ var require_utils = __commonJS((exports, module) => {
     }
     return acc;
   }
+  var isHextet = RegExp.prototype.test.bind(/^[\dA-Fa-f]{1,4}$/);
+  var isIPvFuture = RegExp.prototype.test.bind(/^[vV][\dA-Fa-f]+\.[A-Za-z\d\-._~!$&'()*+,;=:]+$/);
+  var isZoneCharacter = RegExp.prototype.test.bind(/^[A-Za-z\d\-._~]$/);
   var nonSimpleDomain = RegExp.prototype.test.bind(/[^!"$&'()*+,\-.;=_`a-z{}~]/u);
-  function consumeIsZone(buffer) {
-    buffer.length = 0;
-    return true;
-  }
-  function consumeHextets(buffer, address, output) {
-    if (buffer.length) {
-      const hex = stringArrayToHexStripped(buffer);
-      if (hex !== "") {
-        address.push(hex);
-      } else {
-        output.error = true;
-        return false;
+  function isZoneIdentifier(zone) {
+    if (zone.length === 0)
+      return false;
+    for (let i = 0;i < zone.length; i++) {
+      if (isZoneCharacter(zone[i]))
+        continue;
+      if (zone[i] === "%" && i + 2 < zone.length && isHexPair(zone.slice(i + 1, i + 3))) {
+        i += 2;
+        continue;
       }
-      buffer.length = 0;
+      return false;
     }
     return true;
   }
-  function getIPV6(input) {
-    let tokenCount = 0;
-    const output = { error: false, address: "", zone: "" };
-    const address = [];
-    const buffer = [];
-    let endipv6Encountered = false;
-    let endIpv6 = false;
-    let consume = consumeHextets;
-    for (let i = 0;i < input.length; i++) {
-      const cursor = input[i];
-      if (cursor === "[" || cursor === "]") {
-        continue;
-      }
-      if (cursor === ":") {
-        if (endipv6Encountered === true) {
-          endIpv6 = true;
+  function compressIPv6ZeroRun(hextets) {
+    let bestStart = -1;
+    let bestLength = 0;
+    let runStart = -1;
+    let runLength = 0;
+    for (let i = 0;i < hextets.length; i++) {
+      if (hextets[i] === "0") {
+        if (runStart === -1)
+          runStart = i;
+        runLength++;
+        if (runLength > bestLength) {
+          bestLength = runLength;
+          bestStart = runStart;
         }
-        if (!consume(buffer, address, output)) {
-          break;
-        }
-        if (++tokenCount > 7) {
-          output.error = true;
-          break;
-        }
-        if (i > 0 && input[i - 1] === ":") {
-          endipv6Encountered = true;
-        }
-        address.push(":");
-        continue;
-      } else if (cursor === "%") {
-        if (!consume(buffer, address, output)) {
-          break;
-        }
-        consume = consumeIsZone;
       } else {
-        buffer.push(cursor);
-        continue;
+        runStart = -1;
+        runLength = 0;
       }
     }
-    if (buffer.length) {
-      if (consume === consumeIsZone) {
-        output.zone = buffer.join("");
-      } else if (endIpv6) {
-        address.push(buffer.join(""));
-      } else {
-        address.push(stringArrayToHexStripped(buffer));
-      }
+    if (bestLength < 2)
+      return hextets.join(":");
+    const head = hextets.slice(0, bestStart).join(":");
+    const tail = hextets.slice(bestStart + bestLength).join(":");
+    return head + "::" + tail;
+  }
+  function normalizeIPv6Address(input) {
+    const compression = input.indexOf("::");
+    if (compression !== -1 && input.indexOf("::", compression + 1) !== -1)
+      return;
+    const left = compression === -1 ? input.split(":") : input.slice(0, compression).split(":");
+    const right = compression === -1 ? [] : input.slice(compression + 2).split(":");
+    if (compression !== -1) {
+      if (left.length === 1 && left[0] === "")
+        left.length = 0;
+      if (right.length === 1 && right[0] === "")
+        right.length = 0;
     }
-    output.address = address.join("");
-    return output;
+    const parts = left.concat(right);
+    let hextetCount = 0;
+    for (let i = 0;i < parts.length; i++) {
+      const part = parts[i];
+      if (part === "")
+        return;
+      if (part.indexOf(".") !== -1) {
+        if (i !== parts.length - 1 || compression !== -1 && right.length === 0 || !isIPv4(part))
+          return;
+        hextetCount += 2;
+        continue;
+      }
+      if (!isHextet(part))
+        return;
+      parts[i] = parseInt(part, 16).toString(16);
+      hextetCount++;
+    }
+    if (compression === -1) {
+      if (hextetCount !== 8)
+        return;
+      return compressIPv6ZeroRun(parts);
+    }
+    if (hextetCount >= 8)
+      return;
+    const expanded = parts.slice(0, left.length);
+    for (let i = hextetCount;i < 8; i++)
+      expanded.push("0");
+    for (let i = left.length;i < parts.length; i++)
+      expanded.push(parts[i]);
+    return compressIPv6ZeroRun(expanded);
   }
   function normalizeIPv6(host) {
-    if (findToken(host, ":") < 2) {
-      return { host, isIPV6: false };
+    const bracketed = host[0] === "[" && host[host.length - 1] === "]";
+    const hasBracket = host[0] === "[" || host[host.length - 1] === "]";
+    if (hasBracket && !bracketed)
+      return { host, isIPV6: false, error: true };
+    let input = bracketed ? host.slice(1, -1) : host;
+    if (bracketed && isIPvFuture(input)) {
+      input = input.toLowerCase();
+      return { host: `[${input}]`, escapedHost: input, isIPV6: false, isIPVFuture: true };
     }
-    const ipv6 = getIPV6(host);
-    if (!ipv6.error) {
-      let newHost = ipv6.address;
-      let escapedHost = ipv6.address;
-      if (ipv6.zone) {
-        newHost += "%" + ipv6.zone;
-        escapedHost += "%25" + ipv6.zone;
-      }
-      return { host: newHost, isIPV6: true, escapedHost };
-    } else {
-      return { host, isIPV6: false };
+    if (findToken(input, ":") < 2) {
+      return { host, isIPV6: false, error: bracketed };
     }
+    let zoneIdentifier = "";
+    const zoneSeparator = input.indexOf("%");
+    if (zoneSeparator !== -1) {
+      const separatorLength = input.slice(zoneSeparator, zoneSeparator + 3).toLowerCase() === "%25" ? 3 : 1;
+      zoneIdentifier = input.slice(zoneSeparator + separatorLength);
+      if (!isZoneIdentifier(zoneIdentifier))
+        return { host, isIPV6: false, error: true };
+      input = input.slice(0, zoneSeparator);
+    }
+    const address = normalizeIPv6Address(input);
+    if (address === undefined)
+      return { host, isIPV6: false, error: true };
+    return {
+      host: address + (zoneIdentifier ? "%" + zoneIdentifier : ""),
+      escapedHost: address + (zoneIdentifier ? "%25" + zoneIdentifier : ""),
+      isIPV6: true
+    };
   }
   function findToken(str, token) {
     let ind = 0;
@@ -10147,57 +10202,298 @@ var require_utils = __commonJS((exports, module) => {
     }
     return output.join("");
   }
-  function normalizeComponentEncoding(component, esc) {
-    const func = esc !== true ? escape : unescape;
-    if (component.scheme !== undefined) {
-      component.scheme = func(component.scheme);
+  function removeDotSegmentsRelative(path) {
+    if (path === "" || path[0] === "/") {
+      return removeDotSegments(path);
     }
-    if (component.userinfo !== undefined) {
-      component.userinfo = func(component.userinfo);
+    const segments = path.split("/");
+    const last = segments.length - 1;
+    const output = [];
+    let trailingDirectory = false;
+    for (let i = 0;i <= last; i++) {
+      const segment = segments[i];
+      if (segment === "." || segment === "..") {
+        if (segment === "..") {
+          if (output.length !== 0 && output[output.length - 1] !== "..") {
+            output.pop();
+          } else {
+            output.push("..");
+          }
+        }
+        trailingDirectory = i === last;
+      } else {
+        output.push(segment);
+      }
     }
-    if (component.host !== undefined) {
-      component.host = func(component.host);
+    if (trailingDirectory && output[output.length - 1] !== "..") {
+      output.push("");
     }
-    if (component.path !== undefined) {
-      component.path = func(component.path);
+    if (output.length === 0 || output[0] === "" || output[0].includes(":")) {
+      output.unshift(".");
     }
-    if (component.query !== undefined) {
-      component.query = func(component.query);
+    return output.join("/");
+  }
+  var HOST_DELIMS = { "@": "%40", "/": "%2F", "?": "%3F", "#": "%23", ":": "%3A" };
+  var HOST_DELIM_RE = /[@/?#:]/g;
+  var HOST_DELIM_NO_COLON_RE = /[@/?#]/g;
+  function reescapeHostDelimiters(host, isIP) {
+    const re = isIP ? HOST_DELIM_NO_COLON_RE : HOST_DELIM_RE;
+    re.lastIndex = 0;
+    return host.replace(re, (ch) => HOST_DELIMS[ch]);
+  }
+  function normalizePercentEncoding(input, decodeUnreserved = false) {
+    if (input.indexOf("%") === -1) {
+      return input;
     }
-    if (component.fragment !== undefined) {
-      component.fragment = func(component.fragment);
+    let output = "";
+    for (let i = 0;i < input.length; i++) {
+      if (input[i] === "%" && i + 2 < input.length) {
+        const hex = input.slice(i + 1, i + 3);
+        if (isHexPair(hex)) {
+          const normalizedHex = hex.toUpperCase();
+          const decoded = String.fromCharCode(parseInt(normalizedHex, 16));
+          if (decodeUnreserved && isUnreserved(decoded)) {
+            output += decoded;
+          } else {
+            output += "%" + normalizedHex;
+          }
+          i += 2;
+          continue;
+        }
+      }
+      output += input[i];
     }
-    return component;
+    return output;
+  }
+  function normalizePathEncoding(input) {
+    let output = "";
+    for (let i = 0;i < input.length; i++) {
+      const ch = input[i];
+      if (ch === "%" && i + 2 < input.length) {
+        const hex = input.slice(i + 1, i + 3);
+        if (isHexPair(hex)) {
+          const normalizedHex = hex.toUpperCase();
+          const decoded = String.fromCharCode(parseInt(normalizedHex, 16));
+          if (decoded !== "." && isUnreserved(decoded)) {
+            output += decoded;
+          } else {
+            output += "%" + normalizedHex;
+          }
+          i += 2;
+          continue;
+        }
+      }
+      if (isPathCharacter(ch)) {
+        output += ch;
+      } else {
+        const code = input.charCodeAt(i);
+        if (code < 128) {
+          output += isEscapeSafe(code) ? ch : BYTE_HEX[code];
+        } else if (code < 55296 || code > 57343) {
+          output += percentEncodeNonAscii(code);
+        } else if (code <= 56319 && i + 1 < input.length) {
+          const low = input.charCodeAt(i + 1);
+          if (low >= 56320 && low <= 57343) {
+            output += percentEncodeNonAscii(65536 + (code - 55296 << 10) + (low - 56320));
+            i++;
+          } else {
+            output += percentEncodeNonAscii(65533);
+          }
+        } else {
+          output += percentEncodeNonAscii(65533);
+        }
+      }
+    }
+    return output;
+  }
+  function serializePathEncoding(input, pathNoScheme = false) {
+    let output = "";
+    let firstSegment = pathNoScheme && input[0] !== "/";
+    for (let i = 0;i < input.length; i++) {
+      const ch = input[i];
+      if (ch === "%" && i + 2 < input.length) {
+        const hex = input.slice(i + 1, i + 3);
+        if (isHexPair(hex)) {
+          output += "%" + hex.toUpperCase();
+          i += 2;
+          continue;
+        }
+      }
+      if (ch === "/") {
+        firstSegment = false;
+      }
+      if (isPathCharacter(ch) && (ch !== ":" || !firstSegment)) {
+        output += ch;
+      } else {
+        const code = input.charCodeAt(i);
+        if (code < 128) {
+          output += BYTE_HEX[code];
+        } else if (code < 55296 || code > 57343) {
+          output += percentEncodeNonAscii(code);
+        } else if (code <= 56319 && i + 1 < input.length) {
+          const low = input.charCodeAt(i + 1);
+          if (low >= 56320 && low <= 57343) {
+            output += percentEncodeNonAscii(65536 + (code - 55296 << 10) + (low - 56320));
+            i++;
+          } else {
+            output += percentEncodeNonAscii(65533);
+          }
+        } else {
+          output += percentEncodeNonAscii(65533);
+        }
+      }
+    }
+    return output;
+  }
+  function encodeComponent(input, isAllowed) {
+    let output = "";
+    for (let i = 0;i < input.length; i++) {
+      const ch = input[i];
+      if (ch === "%" && i + 2 < input.length) {
+        const hex = input.slice(i + 1, i + 3);
+        if (isHexPair(hex)) {
+          output += "%" + hex.toUpperCase();
+          i += 2;
+          continue;
+        }
+      }
+      if (isAllowed(ch)) {
+        output += ch;
+      } else {
+        const code = input.charCodeAt(i);
+        if (code < 128) {
+          output += BYTE_HEX[code];
+        } else if (code < 55296 || code > 57343) {
+          output += percentEncodeNonAscii(code);
+        } else if (code <= 56319 && i + 1 < input.length) {
+          const low = input.charCodeAt(i + 1);
+          if (low >= 56320 && low <= 57343) {
+            output += percentEncodeNonAscii(65536 + (code - 55296 << 10) + (low - 56320));
+            i++;
+          } else {
+            output += percentEncodeNonAscii(65533);
+          }
+        } else {
+          output += percentEncodeNonAscii(65533);
+        }
+      }
+    }
+    return output;
+  }
+  function encodeUserinfo(input) {
+    return encodeComponent(input, isUserinfoCharacter);
+  }
+  function encodeQuery(input) {
+    return encodeComponent(input, isQueryFragmentCharacter);
+  }
+  function encodeFragment(input) {
+    return encodeComponent(input, isQueryFragmentCharacter);
+  }
+  function isEscapeSafe(cp) {
+    return cp >= 48 && cp <= 57 || cp >= 65 && cp <= 90 || cp >= 97 && cp <= 122 || cp === 42 || cp === 43 || cp === 45 || cp === 46 || cp === 47 || cp === 64 || cp === 95;
+  }
+  function normalizeQueryFragmentEncoding(input) {
+    let output = "";
+    for (let i = 0;i < input.length; i++) {
+      const ch = input[i];
+      if (ch === "%" && i + 2 < input.length) {
+        const hex = input.slice(i + 1, i + 3);
+        if (isHexPair(hex)) {
+          const normalizedHex = hex.toUpperCase();
+          const decoded = String.fromCharCode(parseInt(normalizedHex, 16));
+          if (isUnreserved(decoded)) {
+            output += decoded;
+          } else {
+            output += "%" + normalizedHex;
+          }
+          i += 2;
+          continue;
+        }
+      }
+      if (isQueryFragmentCharacter(ch)) {
+        output += ch;
+      } else {
+        const code = input.charCodeAt(i);
+        if (code < 128) {
+          output += isEscapeSafe(code) ? ch : BYTE_HEX[code];
+        } else if (code < 55296 || code > 57343) {
+          output += percentEncodeNonAscii(code);
+        } else if (code <= 56319 && i + 1 < input.length) {
+          const low = input.charCodeAt(i + 1);
+          if (low >= 56320 && low <= 57343) {
+            output += percentEncodeNonAscii(65536 + (code - 55296 << 10) + (low - 56320));
+            i++;
+          } else {
+            output += percentEncodeNonAscii(65533);
+          }
+        } else {
+          output += percentEncodeNonAscii(65533);
+        }
+      }
+    }
+    return output;
+  }
+  function escapePreservingEscapes(input) {
+    let output = "";
+    for (let i = 0;i < input.length; i++) {
+      if (input[i] === "%" && i + 2 < input.length) {
+        const hex = input.slice(i + 1, i + 3);
+        if (isHexPair(hex)) {
+          output += "%" + hex.toUpperCase();
+          i += 2;
+          continue;
+        }
+      }
+      output += escape(input[i]);
+    }
+    return output;
   }
   function recomposeAuthority(component) {
     const uriTokens = [];
     if (component.userinfo !== undefined) {
-      uriTokens.push(component.userinfo);
+      uriTokens.push(encodeUserinfo(component.userinfo));
       uriTokens.push("@");
     }
     if (component.host !== undefined) {
-      let host = unescape(component.host);
+      let host = component.host;
       if (!isIPv4(host)) {
-        const ipV6res = normalizeIPv6(host);
-        if (ipV6res.isIPV6 === true) {
+        let ipV6res = normalizeIPv6(host);
+        if (ipV6res.isIPV6 !== true && ipV6res.isIPVFuture !== true) {
+          host = normalizePercentEncoding(host, true);
+          ipV6res = normalizeIPv6(host);
+        }
+        if (ipV6res.isIPV6 === true || ipV6res.isIPVFuture === true) {
           host = `[${ipV6res.escapedHost}]`;
         } else {
-          host = component.host;
+          host = reescapeHostDelimiters(host, false);
         }
       }
       uriTokens.push(host);
     }
     if (typeof component.port === "number" || typeof component.port === "string") {
+      const port = String(component.port);
+      if (!isPort(port)) {
+        throw new TypeError("URI port is malformed.");
+      }
       uriTokens.push(":");
-      uriTokens.push(String(component.port));
+      uriTokens.push(port);
     }
     return uriTokens.length ? uriTokens.join("") : undefined;
   }
   module.exports = {
     nonSimpleDomain,
     recomposeAuthority,
-    normalizeComponentEncoding,
+    reescapeHostDelimiters,
+    normalizePercentEncoding,
+    normalizePathEncoding,
+    serializePathEncoding,
+    normalizeQueryFragmentEncoding,
+    encodeUserinfo,
+    encodeQuery,
+    encodeFragment,
+    escapePreservingEscapes,
     removeDotSegments,
+    removeDotSegmentsRelative,
     isIPv4,
     isUUID,
     normalizeIPv6,
@@ -10206,9 +10502,9 @@ var require_utils = __commonJS((exports, module) => {
 });
 
 // node_modules/fast-uri/lib/schemes.js
-var require_schemes = __commonJS((exports, module) => {
+var require_schemes = __commonJS(function(exports, module) {
   var { isUUID } = require_utils();
-  var URN_REG = /([\da-z][\d\-a-z]{0,31}):((?:[\w!$'()*+,\-.:;=@]|%[\da-f]{2})+)/iu;
+  var URN_REG = /^([\da-z][\d\-a-z]{0,31}):((?:[\w!$'()*+,\-./:;=@]|%[\da-f]{2})+)$/iu;
   var supportedSchemeNames = [
     "http",
     "https",
@@ -10263,9 +10559,10 @@ var require_schemes = __commonJS((exports, module) => {
       wsComponent.secure = undefined;
     }
     if (wsComponent.resourceName) {
-      const [path, query] = wsComponent.resourceName.split("?");
+      const queryIndex = wsComponent.resourceName.indexOf("?");
+      const path = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
       wsComponent.path = path && path !== "/" ? path : undefined;
-      wsComponent.query = query;
+      wsComponent.query = queryIndex === -1 ? undefined : wsComponent.resourceName.slice(queryIndex + 1);
       wsComponent.resourceName = undefined;
     }
     wsComponent.fragment = undefined;
@@ -10277,7 +10574,7 @@ var require_schemes = __commonJS((exports, module) => {
       return urnComponent;
     }
     const matches = urnComponent.path.match(URN_REG);
-    if (matches) {
+    if (matches && matches[0] === urnComponent.path) {
       const scheme = options.scheme || urnComponent.scheme || "urn";
       urnComponent.nid = matches[1].toLowerCase();
       urnComponent.nss = matches[2];
@@ -10380,12 +10677,23 @@ var require_schemes = __commonJS((exports, module) => {
 });
 
 // node_modules/fast-uri/index.js
-var require_fast_uri = __commonJS((exports, module) => {
-  var { normalizeIPv6, removeDotSegments, recomposeAuthority, normalizeComponentEncoding, isIPv4, nonSimpleDomain } = require_utils();
+var require_fast_uri = __commonJS(function(exports, module) {
+  var { normalizeIPv6, removeDotSegments, removeDotSegmentsRelative, recomposeAuthority, normalizePercentEncoding, normalizePathEncoding, serializePathEncoding, normalizeQueryFragmentEncoding, encodeQuery, encodeFragment, reescapeHostDelimiters, isIPv4, nonSimpleDomain } = require_utils();
   var { SCHEMES, getSchemeHandler } = require_schemes();
+  var VALID_SCHEME = /^[A-Za-z][A-Za-z0-9+.-]*$/u;
+  var MALFORMED_SCHEME_ERROR = "URI scheme is malformed.";
+  var MALFORMED_HOST_ERROR = "URI host is malformed.";
+  var FORBIDDEN_DOMAIN_HOST_CHARACTER = /[\0-\x20"#/:<>?@[\\\]^`{|}\x7F]/u;
+  function validateScheme(scheme) {
+    const stringScheme = String(scheme);
+    if (!VALID_SCHEME.test(stringScheme)) {
+      throw new TypeError(MALFORMED_SCHEME_ERROR);
+    }
+    return stringScheme;
+  }
   function normalize(uri, options) {
     if (typeof uri === "string") {
-      uri = serialize(parse(uri, options), options);
+      uri = normalizeString(uri, options);
     } else if (typeof uri === "object") {
       uri = parse(serialize(uri, options), options);
     }
@@ -10393,7 +10701,37 @@ var require_fast_uri = __commonJS((exports, module) => {
   }
   function resolve(baseURI, relativeURI, options) {
     const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
-    const resolved = resolveComponent(parse(baseURI, schemelessOptions), parse(relativeURI, schemelessOptions), schemelessOptions, true);
+    const {
+      parsed: baseParsed,
+      malformedAuthorityOrPort: baseMalformed,
+      malformedPercentEncoding: baseMalformedPercentEncoding,
+      malformedSchemeSpecific: baseMalformedSchemeSpecific,
+      malformedHost: baseMalformedHost,
+      malformedScheme: baseMalformedScheme
+    } = parseWithStatus(baseURI, schemelessOptions);
+    const {
+      parsed: relativeParsed,
+      malformedAuthorityOrPort: relativeMalformed,
+      malformedPercentEncoding: relativeMalformedPercentEncoding,
+      malformedSchemeSpecific: relativeMalformedSchemeSpecific,
+      malformedHost: relativeMalformedHost,
+      malformedScheme: relativeMalformedScheme
+    } = parseWithStatus(relativeURI, schemelessOptions);
+    if (baseMalformed || relativeMalformed || baseMalformedPercentEncoding || relativeMalformedPercentEncoding || baseMalformedSchemeSpecific || relativeMalformedSchemeSpecific || baseMalformedHost || relativeMalformedHost || baseMalformedScheme || relativeMalformedScheme) {
+      throw new Error(baseParsed.error || relativeParsed.error || "URI is malformed.");
+    }
+    const resolved = resolveComponent(baseParsed, relativeParsed, schemelessOptions, true);
+    const resolvedSchemeHandler = getSchemeHandler(options && options.scheme || resolved.scheme);
+    const resolvedHost = resolved.host;
+    const resolvedHostIsIP = resolvedHost !== undefined && resolvedHost !== "" && (isIPv4(resolvedHost) || normalizeIPv6(resolvedHost).isIPV6);
+    if (hasForbiddenDomainHost(resolved, options || {}, resolvedSchemeHandler, resolvedHostIsIP)) {
+      throw new Error(MALFORMED_HOST_ERROR);
+    }
+    canonicalizeHost(resolved, options || {}, resolvedSchemeHandler, resolvedHostIsIP);
+    const encodedASCIIHost = resolvedHost && resolvedHost.indexOf("%") !== -1 && !/\P{ASCII}/u.test(resolvedHost);
+    if (resolved.error && !encodedASCIIHost) {
+      throw new Error(resolved.error);
+    }
     schemelessOptions.skipEscape = true;
     return serialize(resolved, schemelessOptions);
   }
@@ -10430,14 +10768,15 @@ var require_fast_uri = __commonJS((exports, module) => {
           if (relative.path[0] === "/") {
             target.path = removeDotSegments(relative.path);
           } else {
-            if ((base.userinfo !== undefined || base.host !== undefined || base.port !== undefined) && !base.path) {
+            const baseHasAuthority = base.userinfo !== undefined || base.host !== undefined || base.port !== undefined;
+            if (baseHasAuthority && !base.path) {
               target.path = "/" + relative.path;
             } else if (!base.path) {
               target.path = relative.path;
             } else {
               target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative.path;
             }
-            target.path = removeDotSegments(target.path);
+            target.path = base.scheme === undefined && !baseHasAuthority && target.path[0] !== "/" ? removeDotSegmentsRelative(target.path) : removeDotSegments(target.path);
           }
           target.query = relative.query;
         }
@@ -10451,19 +10790,9 @@ var require_fast_uri = __commonJS((exports, module) => {
     return target;
   }
   function equal(uriA, uriB, options) {
-    if (typeof uriA === "string") {
-      uriA = unescape(uriA);
-      uriA = serialize(normalizeComponentEncoding(parse(uriA, options), true), { ...options, skipEscape: true });
-    } else if (typeof uriA === "object") {
-      uriA = serialize(normalizeComponentEncoding(uriA, true), { ...options, skipEscape: true });
-    }
-    if (typeof uriB === "string") {
-      uriB = unescape(uriB);
-      uriB = serialize(normalizeComponentEncoding(parse(uriB, options), true), { ...options, skipEscape: true });
-    } else if (typeof uriB === "object") {
-      uriB = serialize(normalizeComponentEncoding(uriB, true), { ...options, skipEscape: true });
-    }
-    return uriA.toLowerCase() === uriB.toLowerCase();
+    const normalizedA = normalizeComparableURI(uriA, options);
+    const normalizedB = normalizeComparableURI(uriB, options);
+    return normalizedA !== undefined && normalizedB !== undefined && normalizedA === normalizedB;
   }
   function serialize(cmpts, opts) {
     const component = {
@@ -10484,20 +10813,24 @@ var require_fast_uri = __commonJS((exports, module) => {
     };
     const options = Object.assign({}, opts);
     const uriTokens = [];
+    if (component.scheme) {
+      component.scheme = validateScheme(component.scheme);
+    }
     const schemeHandler = getSchemeHandler(options.scheme || component.scheme);
     if (schemeHandler && schemeHandler.serialize)
       schemeHandler.serialize(component, options);
+    const hasAuthority = component.userinfo !== undefined || component.host !== undefined || component.port !== undefined;
+    const schemelessReference = (component.scheme === undefined || options.reference === "suffix") && !hasAuthority;
+    const pathNoScheme = !options.skipEscape && schemelessReference;
     if (component.path !== undefined) {
       if (!options.skipEscape) {
-        component.path = escape(component.path);
-        if (component.scheme !== undefined) {
-          component.path = component.path.split("%3A").join(":");
-        }
+        component.path = serializePathEncoding(component.path, pathNoScheme);
       } else {
-        component.path = unescape(component.path);
+        component.path = normalizePercentEncoding(component.path);
       }
     }
     if (options.reference !== "suffix" && component.scheme) {
+      component.scheme = validateScheme(component.scheme);
       uriTokens.push(component.scheme, ":");
     }
     const authority = recomposeAuthority(component);
@@ -10513,7 +10846,10 @@ var require_fast_uri = __commonJS((exports, module) => {
     if (component.path !== undefined) {
       let s = component.path;
       if (!options.absolutePath && (!schemeHandler || !schemeHandler.absolutePath)) {
-        s = removeDotSegments(s);
+        s = schemelessReference && s[0] !== "/" ? removeDotSegmentsRelative(s) : removeDotSegments(s);
+      }
+      if (schemelessReference) {
+        s = serializePathEncoding(s, true);
       }
       if (authority === undefined && s[0] === "/" && s[1] === "/") {
         s = "/%2F" + s.slice(2);
@@ -10521,15 +10857,72 @@ var require_fast_uri = __commonJS((exports, module) => {
       uriTokens.push(s);
     }
     if (component.query !== undefined) {
-      uriTokens.push("?", component.query);
+      uriTokens.push("?", encodeQuery(component.query));
     }
     if (component.fragment !== undefined) {
-      uriTokens.push("#", component.fragment);
+      uriTokens.push("#", encodeFragment(component.fragment));
     }
     return uriTokens.join("");
   }
   var URI_PARSE = /^(?:([^#/:?]+):)?(?:\/\/((?:([^#/?@]*)@)?(\[[^#/?\]]+\]|[^#/:?]*)(?::(\d*))?))?([^#?]*)(?:\?([^#]*))?(?:#((?:.|[\n\r])*))?/u;
-  function parse(uri, opts) {
+  var AUTHORITY_PREFIX = /^(?:[^#/:?]+:)?\/\/([^/?#]*)/;
+  var AUTHORITY_INTRODUCER_REGION = /^(?:[^#/:?]+:)?([/\\\t\n\r]*)/;
+  function getParseError(parsed, matches) {
+    if (matches[2] !== undefined && parsed.path && parsed.path[0] !== "/") {
+      return 'URI path must start with "/" when authority is present.';
+    }
+    if (typeof parsed.port === "number" && (parsed.port < 0 || parsed.port > 65535)) {
+      return "URI port is malformed.";
+    }
+    return;
+  }
+  function hasMalformedPercentEncoding(component) {
+    if (component === undefined)
+      return false;
+    let percent = component.indexOf("%");
+    while (percent !== -1) {
+      if (percent + 2 >= component.length || !/^[\da-f]{2}$/iu.test(component.slice(percent + 1, percent + 3))) {
+        return true;
+      }
+      percent = component.indexOf("%", percent + 3);
+    }
+    return false;
+  }
+  function isIPLiteral(host) {
+    return host[0] === "[" && host[host.length - 1] === "]";
+  }
+  function hasMalformedComponentPercentEncoding(matches) {
+    const host = matches[4];
+    return hasMalformedPercentEncoding(matches[3]) || host !== undefined && !isIPLiteral(host) && hasMalformedPercentEncoding(host) || hasMalformedPercentEncoding(matches[6]) || hasMalformedPercentEncoding(matches[7]) || hasMalformedPercentEncoding(matches[8]);
+  }
+  function canonicalizeHost(parsed, options, schemeHandler, isIP) {
+    if (hasForbiddenDomainHost(parsed, options, schemeHandler, isIP)) {
+      parsed.error = parsed.error || MALFORMED_HOST_ERROR;
+      return true;
+    }
+    if (!options.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport) && parsed.host && !isIPLiteral(parsed.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && isIP === false && nonSimpleDomain(parsed.host)) {
+      let url;
+      try {
+        url = new URL("http://" + parsed.host);
+      } catch (e) {
+        parsed.error = parsed.error || "Host's domain name can not be converted to ASCII: " + e;
+        return true;
+      }
+      if (!isHostOnlyURL(url)) {
+        parsed.error = parsed.error || MALFORMED_HOST_ERROR;
+        return true;
+      }
+      parsed.host = url.hostname;
+    }
+    return false;
+  }
+  function hasForbiddenDomainHost(parsed, options, schemeHandler, isIP) {
+    return Boolean(parsed.host && isIP === false && !isIPLiteral(parsed.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && FORBIDDEN_DOMAIN_HOST_CHARACTER.test(parsed.host));
+  }
+  function isHostOnlyURL(url) {
+    return url.username === "" && url.password === "" && url.port === "" && url.pathname === "/" && url.search === "" && url.hash === "" && url.hostname !== "";
+  }
+  function parseWithStatus(uri, opts) {
     const options = Object.assign({}, opts);
     const parsed = {
       scheme: undefined,
@@ -10540,12 +10933,37 @@ var require_fast_uri = __commonJS((exports, module) => {
       query: undefined,
       fragment: undefined
     };
+    let malformedAuthorityOrPort = false;
+    let malformedPercentEncoding = false;
+    let malformedSchemeSpecific = false;
+    let malformedHost = false;
+    let malformedIPLiteral = false;
+    let malformedScheme = false;
     let isIP = false;
     if (options.reference === "suffix") {
       if (options.scheme) {
         uri = options.scheme + ":" + uri;
       } else {
         uri = "//" + uri;
+      }
+    }
+    const authorityMatch = uri.match(AUTHORITY_PREFIX);
+    if (authorityMatch !== null && authorityMatch[1].indexOf("\\") !== -1) {
+      parsed.error = "URI authority must not contain a literal backslash.";
+      malformedAuthorityOrPort = true;
+    }
+    const introducerMatch = uri.match(AUTHORITY_INTRODUCER_REGION);
+    if (introducerMatch !== null) {
+      const region = introducerMatch[1];
+      const normalizedRegion = region.replace(/[\t\n\r]/g, "");
+      if (normalizedRegion.length >= 2) {
+        if (normalizedRegion.slice(0, 2) !== "//") {
+          parsed.error = parsed.error || "URI authority must not contain a literal backslash.";
+          malformedAuthorityOrPort = true;
+        } else if (region.length !== normalizedRegion.length) {
+          parsed.error = parsed.error || "URI authority introducer must not contain whitespace.";
+          malformedAuthorityOrPort = true;
+        }
       }
     }
     const matches = uri.match(URI_PARSE);
@@ -10557,15 +10975,39 @@ var require_fast_uri = __commonJS((exports, module) => {
       parsed.path = matches[6] || "";
       parsed.query = matches[7];
       parsed.fragment = matches[8];
+      if (parsed.scheme !== undefined) {
+        if (VALID_SCHEME.test(parsed.scheme)) {
+          parsed.scheme = parsed.scheme.toLowerCase();
+        } else {
+          parsed.error = parsed.error || MALFORMED_SCHEME_ERROR;
+          malformedScheme = true;
+        }
+      }
+      malformedPercentEncoding = hasMalformedComponentPercentEncoding(matches);
+      if (malformedPercentEncoding) {
+        parsed.error = parsed.error || "URI contains malformed percent-encoding.";
+      }
       if (isNaN(parsed.port)) {
         parsed.port = matches[5];
+      }
+      const parseError = getParseError(parsed, matches);
+      if (parseError !== undefined) {
+        parsed.error = parsed.error || parseError;
+        malformedAuthorityOrPort = true;
       }
       if (parsed.host) {
         const ipv4result = isIPv4(parsed.host);
         if (ipv4result === false) {
+          const bracketedIPLiteral = isIPLiteral(parsed.host);
+          const hasIPLiteralBracket = parsed.host.indexOf("[") !== -1 || parsed.host.indexOf("]") !== -1;
           const ipv6result = normalizeIPv6(parsed.host);
-          parsed.host = ipv6result.host.toLowerCase();
-          isIP = ipv6result.isIPV6;
+          isIP = ipv6result.isIPV6 || ipv6result.isIPVFuture === true;
+          malformedIPLiteral = hasIPLiteralBracket && (!bracketedIPLiteral || ipv6result.error === true);
+          parsed.host = isIP ? ipv6result.host : ipv6result.host.toLowerCase();
+          if (malformedIPLiteral) {
+            parsed.error = parsed.error || MALFORMED_HOST_ERROR;
+            malformedAuthorityOrPort = true;
+          }
         } else {
           isIP = true;
         }
@@ -10583,38 +11025,67 @@ var require_fast_uri = __commonJS((exports, module) => {
         parsed.error = parsed.error || "URI is not a " + options.reference + " reference.";
       }
       const schemeHandler = getSchemeHandler(options.scheme || parsed.scheme);
-      if (!options.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport)) {
-        if (parsed.host && (options.domainHost || schemeHandler && schemeHandler.domainHost) && isIP === false && nonSimpleDomain(parsed.host)) {
-          try {
-            parsed.host = URL.domainToASCII(parsed.host.toLowerCase());
-          } catch (e) {
-            parsed.error = parsed.error || "Host's domain name can not be converted to ASCII: " + e;
-          }
+      if (!malformedIPLiteral) {
+        malformedHost = canonicalizeHost(parsed, options, schemeHandler, isIP);
+      }
+      if (uri.indexOf("%") !== -1 && parsed.host !== undefined && !malformedIPLiteral) {
+        let host = isIP ? parsed.host : normalizePercentEncoding(parsed.host, true);
+        if (!isIP) {
+          host = normalizePercentEncoding(host.toLowerCase());
         }
+        parsed.host = isIP || options.scheme !== "null" ? reescapeHostDelimiters(host, isIP) : host;
       }
       if (!schemeHandler || schemeHandler && !schemeHandler.skipNormalize) {
-        if (uri.indexOf("%") !== -1) {
-          if (parsed.scheme !== undefined) {
-            parsed.scheme = unescape(parsed.scheme);
-          }
-          if (parsed.host !== undefined) {
-            parsed.host = unescape(parsed.host);
-          }
-        }
         if (parsed.path) {
-          parsed.path = escape(unescape(parsed.path));
+          parsed.path = normalizePathEncoding(parsed.path);
+        }
+        if (parsed.query) {
+          parsed.query = normalizeQueryFragmentEncoding(parsed.query);
         }
         if (parsed.fragment) {
-          parsed.fragment = encodeURI(decodeURIComponent(parsed.fragment));
+          parsed.fragment = normalizeQueryFragmentEncoding(parsed.fragment);
         }
       }
       if (schemeHandler && schemeHandler.parse) {
         schemeHandler.parse(parsed, options);
+        if (schemeHandler === SCHEMES.urn && parsed.nid === undefined) {
+          malformedSchemeSpecific = true;
+        }
       }
     } else {
       parsed.error = parsed.error || "URI can not be parsed.";
     }
-    return parsed;
+    return { parsed, malformedAuthorityOrPort, malformedPercentEncoding, malformedSchemeSpecific, malformedHost, malformedScheme };
+  }
+  function parse(uri, opts) {
+    return parseWithStatus(uri, opts).parsed;
+  }
+  function normalizeString(uri, opts) {
+    return normalizeStringWithStatus(uri, opts).normalized;
+  }
+  function normalizeStringWithStatus(uri, opts) {
+    const { parsed, malformedAuthorityOrPort, malformedPercentEncoding, malformedSchemeSpecific, malformedHost, malformedScheme } = parseWithStatus(uri, opts);
+    return {
+      normalized: malformedAuthorityOrPort || malformedPercentEncoding || malformedSchemeSpecific || malformedHost || malformedScheme ? uri : serialize(parsed, opts),
+      malformedAuthorityOrPort,
+      malformedPercentEncoding,
+      malformedSchemeSpecific,
+      malformedHost,
+      malformedScheme
+    };
+  }
+  function normalizeComparableURI(uri, opts) {
+    if (typeof uri !== "string" && typeof uri !== "object") {
+      return;
+    }
+    let value;
+    try {
+      value = typeof uri === "string" ? uri : serialize(uri, opts);
+    } catch {
+      return;
+    }
+    const { normalized, malformedAuthorityOrPort, malformedPercentEncoding, malformedSchemeSpecific, malformedHost, malformedScheme } = normalizeStringWithStatus(value, opts);
+    return malformedAuthorityOrPort || malformedPercentEncoding || malformedSchemeSpecific || malformedHost || malformedScheme ? undefined : normalized;
   }
   var fastUri = {
     SCHEMES,
@@ -10631,7 +11102,7 @@ var require_fast_uri = __commonJS((exports, module) => {
 });
 
 // node_modules/ajv/dist/runtime/uri.js
-var require_uri = __commonJS((exports) => {
+var require_uri = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var uri = require_fast_uri();
   uri.code = 'require("ajv/dist/runtime/uri").default';
@@ -10639,7 +11110,7 @@ var require_uri = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/core.js
-var require_core = __commonJS((exports) => {
+var require_core = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = undefined;
   var validate_1 = require_validate();
@@ -11013,10 +11484,10 @@ var require_core = __commonJS((exports) => {
       this.formats[name] = format;
       return this;
     }
-    errorsText(errors2 = this.errors, { separator = ", ", dataVar = "data" } = {}) {
-      if (!errors2 || errors2.length === 0)
+    errorsText(errors = this.errors, { separator = ", ", dataVar = "data" } = {}) {
+      if (!errors || errors.length === 0)
         return "No errors";
-      return errors2.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text, msg) => text + separator + msg);
+      return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text, msg) => text + separator + msg);
     }
     $dataMetaSchema(metaSchema, keywordsJsonPointers) {
       const rules = this.RULES.all;
@@ -11232,7 +11703,7 @@ var require_core = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/core/id.js
-var require_id = __commonJS((exports) => {
+var require_id = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var def = {
     keyword: "id",
@@ -11244,7 +11715,7 @@ var require_id = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/core/ref.js
-var require_ref = __commonJS((exports) => {
+var require_ref = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.callRef = exports.getValidate = undefined;
   var ref_error_1 = require_ref_error();
@@ -11363,7 +11834,7 @@ var require_ref = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/core/index.js
-var require_core2 = __commonJS((exports) => {
+var require_core2 = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var id_1 = require_id();
   var ref_1 = require_ref();
@@ -11381,7 +11852,7 @@ var require_core2 = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/validation/limitNumber.js
-var require_limitNumber = __commonJS((exports) => {
+var require_limitNumber = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var codegen_1 = require_codegen();
   var ops = codegen_1.operators;
@@ -11410,7 +11881,7 @@ var require_limitNumber = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/validation/multipleOf.js
-var require_multipleOf = __commonJS((exports) => {
+var require_multipleOf = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var codegen_1 = require_codegen();
   var error = {
@@ -11435,7 +11906,7 @@ var require_multipleOf = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/runtime/ucs2length.js
-var require_ucs2length = __commonJS((exports) => {
+var require_ucs2length = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   function ucs2length(str) {
     const len = str.length;
@@ -11458,7 +11929,7 @@ var require_ucs2length = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/validation/limitLength.js
-var require_limitLength = __commonJS((exports) => {
+var require_limitLength = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var codegen_1 = require_codegen();
   var util_1 = require_util();
@@ -11487,7 +11958,7 @@ var require_limitLength = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/validation/pattern.js
-var require_pattern = __commonJS((exports) => {
+var require_pattern = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var code_1 = require_code2();
   var util_1 = require_util();
@@ -11521,7 +11992,7 @@ var require_pattern = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/validation/limitProperties.js
-var require_limitProperties = __commonJS((exports) => {
+var require_limitProperties = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var codegen_1 = require_codegen();
   var error = {
@@ -11547,7 +12018,7 @@ var require_limitProperties = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/validation/required.js
-var require_required = __commonJS((exports) => {
+var require_required = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var code_1 = require_code2();
   var codegen_1 = require_codegen();
@@ -11626,7 +12097,7 @@ var require_required = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/validation/limitItems.js
-var require_limitItems = __commonJS((exports) => {
+var require_limitItems = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var codegen_1 = require_codegen();
   var error = {
@@ -11652,7 +12123,7 @@ var require_limitItems = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/runtime/equal.js
-var require_equal = __commonJS((exports) => {
+var require_equal = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var equal = require_fast_deep_equal();
   equal.code = 'require("ajv/dist/runtime/equal").default';
@@ -11660,7 +12131,7 @@ var require_equal = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/validation/uniqueItems.js
-var require_uniqueItems = __commonJS((exports) => {
+var require_uniqueItems = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var dataType_1 = require_dataType();
   var codegen_1 = require_codegen();
@@ -11724,7 +12195,7 @@ var require_uniqueItems = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/validation/const.js
-var require_const = __commonJS((exports) => {
+var require_const = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var codegen_1 = require_codegen();
   var util_1 = require_util();
@@ -11750,7 +12221,7 @@ var require_const = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/validation/enum.js
-var require_enum = __commonJS((exports) => {
+var require_enum = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var codegen_1 = require_codegen();
   var util_1 = require_util();
@@ -11796,7 +12267,7 @@ var require_enum = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/validation/index.js
-var require_validation = __commonJS((exports) => {
+var require_validation = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var limitNumber_1 = require_limitNumber();
   var multipleOf_1 = require_multipleOf();
@@ -11826,7 +12297,7 @@ var require_validation = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/applicator/additionalItems.js
-var require_additionalItems = __commonJS((exports) => {
+var require_additionalItems = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.validateAdditionalItems = undefined;
   var codegen_1 = require_codegen();
@@ -11876,7 +12347,7 @@ var require_additionalItems = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/applicator/items.js
-var require_items = __commonJS((exports) => {
+var require_items = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.validateTuple = undefined;
   var codegen_1 = require_codegen();
@@ -11930,7 +12401,7 @@ var require_items = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/applicator/prefixItems.js
-var require_prefixItems = __commonJS((exports) => {
+var require_prefixItems = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var items_1 = require_items();
   var def = {
@@ -11944,7 +12415,7 @@ var require_prefixItems = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/applicator/items2020.js
-var require_items2020 = __commonJS((exports) => {
+var require_items2020 = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var codegen_1 = require_codegen();
   var util_1 = require_util();
@@ -11976,7 +12447,7 @@ var require_items2020 = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/applicator/contains.js
-var require_contains = __commonJS((exports) => {
+var require_contains = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var codegen_1 = require_codegen();
   var util_1 = require_util();
@@ -12067,7 +12538,7 @@ var require_contains = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/applicator/dependencies.js
-var require_dependencies = __commonJS((exports) => {
+var require_dependencies = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.validateSchemaDeps = exports.validatePropertyDeps = exports.error = undefined;
   var codegen_1 = require_codegen();
@@ -12152,7 +12623,7 @@ var require_dependencies = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/applicator/propertyNames.js
-var require_propertyNames = __commonJS((exports) => {
+var require_propertyNames = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var codegen_1 = require_codegen();
   var util_1 = require_util();
@@ -12192,7 +12663,7 @@ var require_propertyNames = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/applicator/additionalProperties.js
-var require_additionalProperties = __commonJS((exports) => {
+var require_additionalProperties = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var code_1 = require_code2();
   var codegen_1 = require_codegen();
@@ -12274,13 +12745,13 @@ var require_additionalProperties = __commonJS((exports) => {
           }
         }
       }
-      function applyAdditionalSchema(key, valid, errors2) {
+      function applyAdditionalSchema(key, valid, errors) {
         const subschema = {
           keyword: "additionalProperties",
           dataProp: key,
           dataPropType: util_1.Type.Str
         };
-        if (errors2 === false) {
+        if (errors === false) {
           Object.assign(subschema, {
             compositeRule: true,
             createErrors: false,
@@ -12295,7 +12766,7 @@ var require_additionalProperties = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/applicator/properties.js
-var require_properties = __commonJS((exports) => {
+var require_properties = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var validate_1 = require_validate();
   var code_1 = require_code2();
@@ -12350,7 +12821,7 @@ var require_properties = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/applicator/patternProperties.js
-var require_patternProperties = __commonJS((exports) => {
+var require_patternProperties = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var code_1 = require_code2();
   var codegen_1 = require_codegen();
@@ -12421,7 +12892,7 @@ var require_patternProperties = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/applicator/not.js
-var require_not = __commonJS((exports) => {
+var require_not = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var util_1 = require_util();
   var def = {
@@ -12449,7 +12920,7 @@ var require_not = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/applicator/anyOf.js
-var require_anyOf = __commonJS((exports) => {
+var require_anyOf = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var code_1 = require_code2();
   var def = {
@@ -12463,7 +12934,7 @@ var require_anyOf = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/applicator/oneOf.js
-var require_oneOf = __commonJS((exports) => {
+var require_oneOf = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var codegen_1 = require_codegen();
   var util_1 = require_util();
@@ -12518,7 +12989,7 @@ var require_oneOf = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/applicator/allOf.js
-var require_allOf = __commonJS((exports) => {
+var require_allOf = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var util_1 = require_util();
   var def = {
@@ -12542,7 +13013,7 @@ var require_allOf = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/applicator/if.js
-var require_if = __commonJS((exports) => {
+var require_if = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var codegen_1 = require_codegen();
   var util_1 = require_util();
@@ -12608,7 +13079,7 @@ var require_if = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/applicator/thenElse.js
-var require_thenElse = __commonJS((exports) => {
+var require_thenElse = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var util_1 = require_util();
   var def = {
@@ -12623,7 +13094,7 @@ var require_thenElse = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/applicator/index.js
-var require_applicator = __commonJS((exports) => {
+var require_applicator = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var additionalItems_1 = require_additionalItems();
   var prefixItems_1 = require_prefixItems();
@@ -12666,7 +13137,7 @@ var require_applicator = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/format/format.js
-var require_format = __commonJS((exports) => {
+var require_format = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var codegen_1 = require_codegen();
   var error = {
@@ -12753,7 +13224,7 @@ var require_format = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/format/index.js
-var require_format2 = __commonJS((exports) => {
+var require_format2 = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var format_1 = require_format();
   var format = [format_1.default];
@@ -12761,7 +13232,7 @@ var require_format2 = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/metadata.js
-var require_metadata = __commonJS((exports) => {
+var require_metadata = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.contentVocabulary = exports.metadataVocabulary = undefined;
   exports.metadataVocabulary = [
@@ -12781,7 +13252,7 @@ var require_metadata = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/draft7.js
-var require_draft7 = __commonJS((exports) => {
+var require_draft7 = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var core_1 = require_core2();
   var validation_1 = require_validation();
@@ -12800,18 +13271,18 @@ var require_draft7 = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/vocabularies/discriminator/types.js
-var require_types = __commonJS((exports) => {
+var require_types = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.DiscrError = undefined;
   var DiscrError;
-  (function(DiscrError2) {
-    DiscrError2["Tag"] = "tag";
-    DiscrError2["Mapping"] = "mapping";
+  (function(DiscrError) {
+    DiscrError["Tag"] = "tag";
+    DiscrError["Mapping"] = "mapping";
   })(DiscrError || (exports.DiscrError = DiscrError = {}));
 });
 
 // node_modules/ajv/dist/vocabularies/discriminator/index.js
-var require_discriminator = __commonJS((exports) => {
+var require_discriminator = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var codegen_1 = require_codegen();
   var types_1 = require_types();
@@ -12913,7 +13384,7 @@ var require_discriminator = __commonJS((exports) => {
 });
 
 // node_modules/ajv/dist/refs/json-schema-draft-07.json
-var require_json_schema_draft_07 = __commonJS((exports, module) => {
+var require_json_schema_draft_07 = __commonJS(function(exports, module) {
   module.exports = {
     $schema: "http://json-schema.org/draft-07/schema#",
     $id: "http://json-schema.org/draft-07/schema#",
@@ -13068,7 +13539,7 @@ var require_json_schema_draft_07 = __commonJS((exports, module) => {
 });
 
 // node_modules/ajv/dist/ajv.js
-var require_ajv = __commonJS((exports, module) => {
+var require_ajv = __commonJS(function(exports, module) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.MissingRefError = exports.ValidationError = exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = exports.Ajv = undefined;
   var core_1 = require_core();
@@ -13136,7 +13607,7 @@ var require_ajv = __commonJS((exports, module) => {
 });
 
 // node_modules/ajv-formats/dist/formats.js
-var require_formats = __commonJS((exports) => {
+var require_formats = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.formatNames = exports.fastFormats = exports.fullFormats = undefined;
   function fmtDef(validate, compare) {
@@ -13313,7 +13784,7 @@ var require_formats = __commonJS((exports) => {
 });
 
 // node_modules/ajv-formats/dist/limit.js
-var require_limit = __commonJS((exports) => {
+var require_limit = __commonJS(function(exports) {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.formatLimitDefinition = undefined;
   var ajv_1 = require_ajv();
@@ -13382,7 +13853,7 @@ var require_limit = __commonJS((exports) => {
 });
 
 // node_modules/ajv-formats/dist/index.js
-var require_dist = __commonJS((exports, module) => {
+var require_dist = __commonJS(function(exports, module) {
   Object.defineProperty(exports, "__esModule", { value: true });
   var formats_1 = require_formats();
   var limit_1 = require_limit();
